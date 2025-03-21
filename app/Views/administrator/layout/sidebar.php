@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Sidebar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../../../Resources/js/modal-faculty.js"></script>
+    <!-- <script src="../../../Resources/js/modal-faculty.js"></script> -->
 </head>
 <body class="bg-gray-100 flex">
 
@@ -30,12 +30,33 @@
                     <span>Student List</span>
                 </a>
                 </li>
-                <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
-                <a href="../../Views/administrator/schedule.php" class="flex items-center space-x-2 w-full text-white">   
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6v6l4 2M8 2h8a2 2 0 012 2v16a2 2 0 01-2 2H8a2 2 0 01-2-2V4a2 2 0 012-2z"></path></svg>
-                    <span>Schedule</span>
-                </a>
-                </li>
+                <li class="relative">
+    <div onclick="toggleDropdown()" class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
+        <a class="flex items-center space-x-2 w-full text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 6v6l4 2M8 2h8a2 2 0 012 2v16a2 2 0 01-2 2H8a2 2 0 01-2-2V4a2 2 0 012-2z"></path>
+            </svg>
+            <span>Schedule</span>
+        </a>
+    </div>
+
+    <!-- Dropdown menu -->
+    <ul id="scheduleDropdown" class="absolute left-0 mt-1 bg-blue-700 text-black shadow-lg rounded-lg hidden w-48">
+        <li>
+            <a href="../../Views/administrator/add_schedule.php" class="block px-4 py-2 hover:bg-gray-200">Add Schedule</a>
+        </li>
+        <li>
+            <a href="../../Views/administrator/schedule.php" class="block px-4 py-2 hover:bg-gray-200">View Schedule</a>
+        </li>
+    </ul>
+</li>
+
+<script>
+    function toggleDropdown() {
+        document.getElementById('scheduleDropdown').classList.toggle('hidden');
+    }
+</script>
+
                 <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
                 <a href="../../Views/administrator/Dashboard.php" class="flex items-center space-x-2 w-full text-white">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h8M8 12h8m-4 6h4"></path></svg>
@@ -49,8 +70,10 @@
                 </a>
                 </li>
                 <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 012 2v16l-7-4-7 4V5a2 2 0 012-2z"></path></svg>
+                <a href="../../Views/administrator/student-list.php" class="flex items-center space-x-2 w-full text-white">        
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 012 2v16l-7-4-7 4V5a2 2 0 012-2z"></path></svg>
                     <span>Users</span>
+                </a>
                 </li>
                 <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
                 <a href="../../Views/administrator/course.php" class="flex items-center space-x-2 w-full text-white">

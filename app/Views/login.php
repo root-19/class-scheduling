@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <p class="text-red-500 text-center"><?= $message ?></p>
         <?php endif; ?>
         <form action="" method="POST" class="mt-4 space-y-4">
-            <!-- <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring"> -->
+            <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Login</button>
         </form>

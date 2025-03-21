@@ -11,7 +11,7 @@ class CourseController {
         $this->course = new Course();
     }
 
-    // Handle form submission
+
     public function handleRequest() {
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (isset($_POST['add_course'])) {

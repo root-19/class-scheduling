@@ -18,12 +18,12 @@ class AuthController {
         $this->user = new User($conn);
     }
 
-    public function register($firstName, $lastName, $email, $password) {
-        $register = $this->user->register($firstName, $lastName, $email, $password);
+    public function register($firstName, $lastName, $email, $student_id, $contact, $password) {
+        $register = $this->user->register($firstName, $lastName, $student_id, $contact, $email, $password);
         
         if ($register) {
             // Send email
-            if ($this->sendEmail($firstName, $email, $password)) {
+            if ($this->sendEmail($firstName, $email,  $student_id, $password)) {
                 return ["success" => true, "message" => "Registration successful! Check your email for login details."];
             } else {
                 return ["success" => false, "message" => "Registration successful, but failed to send email."];
@@ -33,7 +33,7 @@ class AuthController {
         }
     }
 
-    private function sendEmail($firstName, $email, $password) {
+    private function sendEmail($firstName, $email,  $student_id, $password) {
         $mail = new PHPMailer(true);
         
         try {

@@ -1,50 +1,44 @@
 <?php
-
 namespace App\Models;
 
-use App\Config\Database;
+require_once __DIR__ . '/../Config/Database.php';
 use PDO;
-use PDOException;
+use App\Config\Database;
 
 class Schedule {
     private $conn;
+    private $table = "schedules";
 
     public function __construct() {
-        $database = new Database();
-        $this->conn = $database->connect();
+        $db = new Database();
+        $this->conn = $db->connect();
     }
 
     public function getAllSchedules() {
-        try {
-            $stmt = $this->conn->prepare("SELECT * FROM schedules");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return ["error" => "Database error: " . $e->getMessage()];
-        }
+        $query = "SELECT id, faculty, day_of_week, subject, month_from, month_to, room, department, time_from, time_to, course, section FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function addSchedule($faculty, $day, $subject, $monthFrom, $monthTo, $room, $department, $timeFrom, $timeTo, $course, $section, $ratio) {
-        try {
-            $stmt = $this->conn->prepare("INSERT INTO schedules (faculty, day_of_week, subject, month_from, month_to, room, department, time_from, time_to, course, section, ratio) VALUES (:faculty, :day, :subject, :monthFrom, :monthTo, :room, :department, :timeFrom, :timeTo, :course, :section, :ratio)");
-            
-            return $stmt->execute([
-                ':faculty' => $faculty,
-                ':day' => $day,
-                ':subject' => $subject,
-                ':monthFrom' => $monthFrom,
-                ':monthTo' => $monthTo,
-                ':room' => $room,
-                ':department' => $department,
-                ':timeFrom' => $timeFrom,
-                ':timeTo' => $timeTo,
-                ':course' => $course,
-                ':section' => $section,
-                ':ratio' => $ratio
-            ]);
-        } catch (PDOException $e) {
-            error_log("Error inserting schedule: " . $e->getMessage());
+    public function addSchedule($data) {
+        $query = "INSERT INTO " . $this->table . " 
+        (faculty, day_of_week, subject, month_from, month_to, room, department, time_from, time_to, course, section) 
+        VALUES 
+        (:faculty, :day_of_week, :subject, :month_from, :month_to, :room, :department, :time_from, :time_to, :course, :section)";
+
+        $stmt = $this->conn->prepare($query);
+
+        // Debugging: Log the data to check if it is correctly received
+        // error_log("Received data: " . print_r($data, true));
+
+        if ($stmt->execute($data)) {
+            return true;
+        } else {
+            // Debugging: Log SQL errors if insertion fails
+            // error_log("SQL Error: " . print_r($stmt->errorInfo(), true));
             return false;
         }
     }
 }
+?>

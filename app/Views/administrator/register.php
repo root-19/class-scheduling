@@ -16,9 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
     $email = $_POST['email'];
+    $student_id = $_POST['student_id'];
+    $contact = $_POST['contact'];
     $password = $_POST['password'];
 
-    $result = $auth->register($firstName, $lastName, $email, $password, 'student'); // Role set to 'student'
+    $result = $auth->register($firstName, $lastName, $email, $student_id, $contact, $password, 'student'); // Role set to 'student'
 
     if ($result['success']) {
         header("Location: register.php?message=Registration successful");
@@ -29,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Fetch registered students
-$stmt = $conn->prepare("SELECT id, first_name, last_name, email FROM users WHERE role = 'student'");
+$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact FROM users WHERE role = 'student'");
 $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -48,6 +50,8 @@ include './layout/sidebar.php';
             <input type="text" name="first_name" placeholder="First Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <input type="text" name="last_name" placeholder="Last Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="text" name="student_id" placeholder="Student ID" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="text" name="contact" placeholder="Contact Number" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
             <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Register Student</button>
         </form>
@@ -63,6 +67,8 @@ include './layout/sidebar.php';
                     <th class="p-2 border">First Name</th>
                     <th class="p-2 border">Last Name</th>
                     <th class="p-2 border">Email</th>
+                    <th class="p-2 border">Student ID</th>
+                    <th class="p-2 border">Contact</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,11 +79,13 @@ include './layout/sidebar.php';
                             <td class="p-2 border text-center"><?= htmlspecialchars($student['first_name']) ?></td>
                             <td class="p-2 border text-center"><?= htmlspecialchars($student['last_name']) ?></td>
                             <td class="p-2 border text-center"><?= htmlspecialchars($student['email']) ?></td>
+                            <td class="p-2 border text-center"><?= htmlspecialchars($student['student_id']) ?></td>
+                            <td class="p-2 border text-center"><?= htmlspecialchars($student['contact']) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="4" class="text-center p-4">No students registered.</td>
+                        <td colspan="6" class="text-center p-4">No students registered.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
