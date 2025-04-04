@@ -73,33 +73,54 @@ class AuthController {
             return false;
         }
     }
+    
     public function login($email, $password) {
+        // Check in users table first
         $user = $this->user->findUserByEmail($email);
     
-        if (!$user) {
-            return ["success" => false, "message" => "User not found."];
+        if ($user) {
+            if (!password_verify($password, $user['password'])) {
+                return ["success" => false, "message" => "Incorrect password."];
+            }
+    
+            session_start();
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['first_name'] = $user['first_name']; 
+            $_SESSION['last_name'] = $user['last_name']; 
+            $_SESSION['role'] = $user['role'];
+    
+            // Redirect based on role
+            if ($user['role'] == "student") {
+                header("Location: ../Views/student/Dashboard.php");
+                exit();
+            } else {
+                header("Location: ../Views/administrator/Dashboard.php");
+                exit();
+            }
         }
     
-        // Verify password
-        if (!password_verify($password, $user['password'])) {
-            return ["success" => false, "message" => "Incorrect password."];
+        // If no user is found, check the faculty table
+        $db = new Database();
+        $conn = $db->connect();
+        $stmt = $conn->prepare("SELECT * FROM faculty WHERE email = :email");
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        $faculty = $stmt->fetch(\PDO::FETCH_ASSOC);
+    
+        if ($faculty) {
+            if (!password_verify($password, $faculty['password'])) {
+                return ["success" => false, "message" => "Incorrect password."];
+            }
+    
+            session_start();
+            $_SESSION['faculty_id'] = $faculty['id'];
+            $_SESSION['faculty_name'] = $faculty['name']; 
+            $_SESSION['role'] = "faculty"; 
+    
+            header("Location: ../Views/faculty/Dashboard.php");
+            exit();
         }
     
-        // Start user session
-        session_start();
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['first_name'] = $user['first_name']; 
-        $_SESSION['last_name'] = $user['last_name']; 
-        $_SESSION['role'] = $user['role'];
-    
-        // Redirect based on role
-        if ($user['role'] == "student") {
-            header("Location: ../Views/student/Dashboard.php");
-        } else {
-            header("Location: ../Views/administrator/Dashboard.php");
-        }
-    
-        return ["success" => true, "message" => "Login successful!"];
+        return ["success" => false, "message" => "User not found."];
     }
-    
-}
+}    

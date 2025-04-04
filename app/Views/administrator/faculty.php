@@ -18,14 +18,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_faculty'])) {
     $email = $_POST['email'];
     $contact = $_POST['contact'];
     $address = $_POST['address'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hashing the password
 
-
-    $stmt = $conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$facultyId, $name, $email, $contact]);
+    $stmt = $conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, password) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$facultyId, $name, $email, $contact, $address, $password]);
 
     header("Location: faculty.php");
     exit();
 }
+
 
 // Handle Update Faculty
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_faculty'])) {
@@ -35,6 +36,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_faculty'])) {
     $email = $_POST['email'];
     $contact = $_POST['contact'];
     $address = $_POST['address'];
+   
+
 
 
     $stmt = $conn->prepare("UPDATE faculty SET faculty_id=?, name=?, email=?, contact=?, address=? WHERE id=?");
@@ -96,6 +99,7 @@ include './layout/sidebar.php';
                         <th class="p-3 border">Email</th>
                         <th class="p-3 border">Contact</th>
                         <th class="p-3 border">Address</th>
+                        <!-- <th class="p-3 border">Password</th> -->
                         <th class="p-3 border">Actions</th>
                     </tr>
                 </thead>
@@ -108,6 +112,8 @@ include './layout/sidebar.php';
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['email']); ?></td>
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['contact']); ?></td>
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['address']); ?></td>
+                                <!-- <td class="p-3 border"><?php echo htmlspecialchars($faculty['password']); ?></td> -->
+
 
                                 <td class="p-3 border">
                                     <div class="flex space-x-2">
@@ -195,6 +201,8 @@ include './layout/sidebar.php';
             <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded mb-2">
             <input type="text" name="contact" placeholder="Contact" required class="w-full px-4 py-2 border rounded mb-2">
             <input type="text" name="address" placeholder="Address" required class="w-full px-4 py-2 border rounded mb-2">
+            <input type="text" name="password" placeholder="password" required class="w-full px-4 py-2 border rounded mb-2">
+
             <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full">Add</button>
         </form>
         <button onclick="closeModal('addFacultyModal')" class="mt-2 w-full bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>

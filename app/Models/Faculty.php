@@ -26,11 +26,14 @@ class Faculty {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    // Add faculty
-    public function addFaculty($facultyId, $name, $email, $contact,$address) {
-        $stmt = $this->conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address) VALUES (?, ?, ?, ?,?)");
-        return $stmt->execute([$facultyId, $name, $email, $contact,$address]);
-    }
+// Add faculty with password hashing
+public function addFaculty($facultyId, $name, $email, $contact, $address, $password) {
+    $hashedPassword = password_hash($password, PASSWORD_BCRYPT); // Hash password
+
+    $stmt = $this->conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, password) VALUES (?, ?, ?, ?, ?, ?)");
+    return $stmt->execute([$facultyId, $name, $email, $contact, $address, $hashedPassword]); // Store hashed password
+}
+
 
     // Update faculty
     public function updateFaculty($id, $facultyId, $name, $email, $contact,$address) {

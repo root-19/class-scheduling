@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $contact = $_POST['contact'];
     $password = $_POST['password'];
 
-    $result = $auth->register($firstName, $lastName, $email, $student_id, $contact, $password, 'student'); // Role set to 'student'
+    $result = $auth->register($firstName, $lastName, $email, $student_id, $contact, $password, 'student'); 
 
     if ($result['success']) {
         header("Location: register.php?message=Registration successful");

@@ -15,9 +15,10 @@ class FacultyController {
         return $this->facultyModel->getAllFaculty();
     }
 
-    public function addFaculty($facultyId, $name, $email, $contact,$address) {
-        return $this->facultyModel->addFaculty($facultyId, $name, $email, $contact,$address);
+    public function addFaculty($facultyId, $name, $email, $contact, $address, $password) {
+        return $this->facultyModel->addFaculty($facultyId, $name, $email, $contact, $address, $password);
     }
+    
 
     public function getFaculty($id) {
         return $this->facultyModel->getFacultyById($id);
