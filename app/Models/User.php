@@ -20,21 +20,30 @@ class User {
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    // Register new user
-    public function register($firstName, $lastName, $email,  $student_id, $contact, $password) {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $query = "INSERT INTO " . $this->table . " (first_name, last_name, email,  student_id, contact,password, role) 
-                  VALUES (:first_name, :last_name, :email, :student_id, :contact,  :password, 'student')";
+    public function register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections,$prelim,$semester) {
+        $query = "INSERT INTO users (first_name, last_name, student_id, contact, email, password, role, image, subjects, sections, prelim, semester) 
+                  VALUES (:first_name, :last_name, :student_id, :contact, :email, :password, :role, :image, :subjects, :sections, :prelim, :semester)";
         
         $stmt = $this->conn->prepare($query);
+    
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $encodedSubjects = json_encode($subjects);
+        $encodedSections = json_encode($sections);
+    
         $stmt->bindParam(':first_name', $firstName);
         $stmt->bindParam(':last_name', $lastName);
-        $stmt->bindParam(':email', $email);
         $stmt->bindParam(':student_id', $student_id);
         $stmt->bindParam(':contact', $contact);
+        $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':role', $role);
+        $stmt->bindParam(':image', $imageName);
+        $stmt->bindParam(':subjects', $encodedSubjects);
+        $stmt->bindParam(':sections', $encodedSections);
+        $stmt->bindParam(':prelim', $prelim);
+        $stmt->bindParam(':semester', $semester);
 
+    
         return $stmt->execute();
     }
-}
+}    

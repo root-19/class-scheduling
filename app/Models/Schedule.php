@@ -23,9 +23,9 @@ class Schedule {
 
     public function addSchedule($data) {
         $query = "INSERT INTO " . $this->table . " 
-        (faculty, day_of_week, subject, month_from, month_to, room, department, time_from, time_to, course, section) 
+        (faculty, day_of_week, subject, month_from, month_to, room, department, time_from, time_to, course, section, building) 
         VALUES 
-        (:faculty, :day_of_week, :subject, :month_from, :month_to, :room, :department, :time_from, :time_to, :course, :section)";
+        (:faculty, :day_of_week, :subject, :month_from, :month_to, :room, :department, :time_from, :time_to, :course, :section, :building)";
 
         $stmt = $this->conn->prepare($query);
 

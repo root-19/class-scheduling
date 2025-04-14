@@ -13,13 +13,14 @@ class SubjectController {
     // Handle form submission
     public function handleRequest() {
         if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_subject'])) {
-            $subject_name = $_POST['subject_name'];
-            $description = $_POST['description'];
-            $this->subject->addSubject($subject_name, $description);
+            $subject_names = $_POST['subject_name'];
+            $descriptions = $_POST['description'];
+            $units = $_POST['unit'];
+            $this->subject->addSubject($subject_names, $descriptions, $units);
             header("Location: dashboard.php");
             exit();
         }
-
+    
         if (isset($_GET['delete'])) {
             $id = $_GET['delete'];
             $this->subject->deleteSubject($id);
@@ -27,7 +28,7 @@ class SubjectController {
             exit();
         }
     }
-
+    
     public function getSubjects() {
         return $this->subject->getSubjects();
     }

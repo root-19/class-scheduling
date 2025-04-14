@@ -13,12 +13,19 @@ class Subject {
     }
 
     // Add subject
-    public function addSubject($subject_name, $description) {
-        $stmt = $this->conn->prepare("INSERT INTO subjects (subject_name, description) VALUES (?, ?)");
-        $stmt->bindParam(1, $subject_name);
-        $stmt->bindParam(2, $description);
-        return $stmt->execute();
+    public function addSubject($subject_names, $descriptions, $units) {
+        $stmt = $this->conn->prepare("INSERT INTO subjects (subject_name, unit, description) VALUES (?, ?, ?)");
+    
+        for ($i = 0; $i < count($subject_names); $i++) {
+            $stmt->bindParam(1, $subject_names[$i]);
+            $stmt->bindParam(2, $units[$i]);
+            $stmt->bindParam(3, $descriptions[$i]);
+            $stmt->execute();
+        }
+    
+        return true;
     }
+    
 
     // Get all subjects
     public function getSubjects() {

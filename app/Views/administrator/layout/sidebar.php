@@ -84,7 +84,12 @@
     </a>
                 </li>
                 <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                <!-- <a href="../../Views/administrator/rooms.php" class="flex items-center space-x-2 w-full text-white"> -->
+
+                <!-- <a href="../../Views/administrator/rooms.php" class="flex items-center space-x-2 w-full text-white"> -->
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14"></path>
+        </svg>
                     <span>Rooms</span>
                 </li>
             </ul>

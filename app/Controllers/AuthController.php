@@ -18,12 +18,30 @@ class AuthController {
         $this->user = new User($conn);
     }
 
-    public function register($firstName, $lastName, $email, $student_id, $contact, $password) {
-        $register = $this->user->register($firstName, $lastName, $student_id, $contact, $email, $password);
-        
+    public function register($firstName, $lastName, $email, $student_id, $contact, $password, $role) {
+        // Handle file upload
+        $imageName = null;
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == UPLOAD_ERR_OK) {
+            $imageTmpPath = $_FILES['image']['tmp_name'];
+            $imageName = time() . '-' . $_FILES['image']['name']; 
+            $imagePath = dirname(__DIR__, 2) . '/uploads/' . $imageName;
+
+            // Move the uploaded file to the desired location
+            if (!move_uploaded_file($imageTmpPath, $imagePath)) {
+                return ["success" => false, "message" => "Error uploading image."];
+            }
+        }
+    
+        // Handle subjects and sections
+        $subjects = isset($_POST['subjects']) ? $_POST['subjects'] : [];
+        $sections = isset($_POST['sections']) ? $_POST['sections'] : [];
+    
+        // Call the User model to register the student
+        $register = $this->user->register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections, $prelim, $semester);
+    
         if ($register) {
-            // Send email
-            if ($this->sendEmail($firstName, $email,  $student_id, $password)) {
+            // Send email (as before)
+            if ($this->sendEmail($firstName, $email, $student_id, $password)) {
                 return ["success" => true, "message" => "Registration successful! Check your email for login details."];
             } else {
                 return ["success" => false, "message" => "Registration successful, but failed to send email."];
@@ -32,6 +50,7 @@ class AuthController {
             return ["success" => false, "message" => "Error registering user."];
         }
     }
+    
 
     private function sendEmail($firstName, $email,  $student_id, $password) {
         $mail = new PHPMailer(true);
