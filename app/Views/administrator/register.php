@@ -12,32 +12,49 @@ $auth = new AuthController();
 $message = '';
 
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $firstName = $_POST['first_name'];
-    $lastName = $_POST['last_name'];
-    $email = $_POST['email'];
-    $student_id = $_POST['student_id'];
-    $contact = $_POST['contact'];
-    $password = $_POST['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $faculty = $_POST['faculty_name'] ?? '';
+    $firstName = $_POST['first_name'] ?? '';
+    $lastName = $_POST['last_name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $student_id = $_POST['student_id'] ?? '';
+    $contact = $_POST['contact'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $prelim = $_POST['prelim'] ?? '';
+    $semester = $_POST['semester'] ?? '';
+    $sections = $_POST['sections'] ?? [];
+    $subjects = $_POST['subjects'] ?? [];
 
-    $result = $auth->register($firstName, $lastName, $email, $student_id, $contact, $password, 'student'); 
+    // Call register method with all required parameters
+    $result = $auth->register(
+        $firstName,
+        $lastName,
+        $email,
+        $student_id,
+        $contact,
+        $password,
+        'student',
+        $subjects,
+        $sections,
+        $prelim,
+        $semester,
+        $faculty
+    );
 
     if ($result['success']) {
         header("Location: register.php?message=Registration successful");
         exit();
     } else {
-        $message = "Error registering user.";
+        $message = $result['message'];
     }
 }
 
 // Fetch registered students
-$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact, image, subjects, sections FROM users WHERE role = 'student'");
+$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact, image, subjects, sections, faculty FROM users WHERE role = 'student'");
 $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-
-
-
+// Handle deletion
 if (isset($_GET['delete'])) {
     $deleteId = $_GET['delete'];
     $stmt = $conn->prepare("DELETE FROM users WHERE id = ? AND role = 'student'");
@@ -46,10 +63,13 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
-
+// Fetch faculties
+$facultyQuery = $conn->query("SELECT * FROM faculty");
+$faculties = $facultyQuery->fetchAll(PDO::FETCH_ASSOC);
 
 include './layout/sidebar.php';
 ?>
+
 
 <div class="p-6 w-full">
     <h1 class="text-2xl font-bold mb-4">Register Student</h1>
@@ -65,6 +85,15 @@ include './layout/sidebar.php';
         <p class="text-red-500 text-center"><?= $message ?></p>
     <?php endif; ?>
     <form action="" method="POST" class="space-y-4" enctype="multipart/form-data">
+    <select name="faculty_name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+    <option value="">Select Faculty</option>
+    <?php foreach ($faculties as $faculty): ?>
+        <option value="<?= htmlspecialchars($faculty['name']) ?>">
+            <?= htmlspecialchars($faculty['name']) ?>
+        </option>
+    <?php endforeach; ?>
+</select>
+
         <input type="text" name="first_name" placeholder="First Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="text" name="last_name" placeholder="Last Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring">
@@ -111,7 +140,8 @@ include './layout/sidebar.php';
     <img src="/uploads/<?= htmlspecialchars($student['image']) ?>" 
      alt="Student Image" 
      class="w-16 h-16 object-cover mx-auto rounded-full hidden">
-
+     <td class="p-2 border text-center hidden"><?= htmlspecialchars($student['faculty_name']) ?></td>
+  
     <td class="p-2 border text-center"><?= htmlspecialchars($student['first_name']) ?></td>
     <td class="p-2 border text-center"><?= htmlspecialchars($student['last_name']) ?></td>
     <td class="p-2 border text-center"><?= htmlspecialchars($student['email']) ?></td>
@@ -142,17 +172,20 @@ include './layout/sidebar.php';
     </div>
 </div>
 <!-- Modal -->
+
 <div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white p-6 rounded-lg w-96 relative">
         <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500">&times;</button>
         <h3 class="text-xl font-semibold mb-4">Student Information</h3>
         <img id="modalImage" src="../../../uploads/" alt="Student Image" class="w-24 h-24 object-cover mx-auto rounded-full mb-4" />
+        <!-- <p><strong>Faculty:</strong> <span id="modalFacultyName"></span></p> -->
         <p><strong>First Name:</strong> <span id="modalFirstName"></span></p>
         <p><strong>Last Name:</strong> <span id="modalLastName"></span></p>
         <p><strong>Email:</strong> <span id="modalEmail"></span></p>
         <p><strong>Student ID:</strong> <span id="modalStudentId"></span></p>
         <p><strong>Contact:</strong> <span id="modalContact"></span></p>
         <p><strong>Section:</strong> <span id="modalSections"></span></p>
+        <!-- <p><strong>Prelim:</strong> <span id="modalPrelim"></span></p> -->
         <p><strong>Subjects:</strong>
             <ul id="modalSubjects" class="list-disc list-inside text-sm text-gray-700"></ul>
         </p>
@@ -162,10 +195,13 @@ include './layout/sidebar.php';
 
 
 
+
 <script>
 function viewStudent(student) {
      // Set image
      document.getElementById('modalImage').src = `/uploads/${student.image}`;
+    // document.getElementById('modalFacultyName').innerText = student.faculty_name;
+
     document.getElementById('modalFirstName').innerText = student.first_name;
     document.getElementById('modalLastName').innerText = student.last_name;
     document.getElementById('modalEmail').innerText = student.email;

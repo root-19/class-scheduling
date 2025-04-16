@@ -25,7 +25,7 @@
                     <span>Home</span>
                 </li>
                 <li class="hover:bg-blue-700 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
-                <a href="../../Views/faculty/register.php" class="flex items-center space-x-2 w-full text-white">    
+                <a href="../../Views/faculty/my-student.php" class="flex items-center space-x-2 w-full text-white">    
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
                     <span>Student List</span>
                 </a>

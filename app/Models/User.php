@@ -11,25 +11,26 @@ class User {
         $this->conn = $db;
     }
 
-    // Find user by email
     public function findUserByEmail($email) {
         $query = "SELECT * FROM " . $this->table . " WHERE email = :email LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
-
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    public function register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections,$prelim,$semester) {
-        $query = "INSERT INTO users (first_name, last_name, student_id, contact, email, password, role, image, subjects, sections, prelim, semester) 
-                  VALUES (:first_name, :last_name, :student_id, :contact, :email, :password, :role, :image, :subjects, :sections, :prelim, :semester)";
+
+    public function register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections, $prelim, $semester, $faculty) {
+        $query = "INSERT INTO {$this->table} 
+            (first_name, last_name, student_id, contact, email, password, role, image, subjects, sections, prelim, semester, faculty) 
+            VALUES 
+            (:first_name, :last_name, :student_id, :contact, :email, :password, :role, :image, :subjects, :sections, :prelim, :semester, :faculty)";
         
         $stmt = $this->conn->prepare($query);
-    
+
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $encodedSubjects = json_encode($subjects);
         $encodedSections = json_encode($sections);
-    
+
         $stmt->bindParam(':first_name', $firstName);
         $stmt->bindParam(':last_name', $lastName);
         $stmt->bindParam(':student_id', $student_id);
@@ -42,8 +43,8 @@ class User {
         $stmt->bindParam(':sections', $encodedSections);
         $stmt->bindParam(':prelim', $prelim);
         $stmt->bindParam(':semester', $semester);
+        $stmt->bindParam(':faculty', $faculty);
 
-    
         return $stmt->execute();
     }
-}    
+}

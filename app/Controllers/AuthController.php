@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers; 
+namespace App\Controllers;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -10,47 +10,47 @@ use PHPMailer\PHPMailer\Exception;
 
 class AuthController {
     private $user;
-    private $db;
 
     public function __construct() {
-        $this->db = new Database();
-        $conn = $this->db->connect();
+        $db = new Database();
+        $conn = $db->connect();
         $this->user = new User($conn);
     }
 
-    public function register($firstName, $lastName, $email, $student_id, $contact, $password, $role) {
-        // Handle file upload
+    public function register($firstName, $lastName, $email, $student_id, $contact, $password, $role, $subjects, $sections, $prelim, $semester, $faculty)
+    {
         $imageName = null;
-        if (isset($_FILES['image']) && $_FILES['image']['error'] == UPLOAD_ERR_OK) {
+
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $imageTmpPath = $_FILES['image']['tmp_name'];
-            $imageName = time() . '-' . $_FILES['image']['name']; 
+            $imageName = time() . '-' . basename($_FILES['image']['name']);
             $imagePath = dirname(__DIR__, 2) . '/uploads/' . $imageName;
 
-            // Move the uploaded file to the desired location
             if (!move_uploaded_file($imageTmpPath, $imagePath)) {
                 return ["success" => false, "message" => "Error uploading image."];
             }
         }
-    
-        // Handle subjects and sections
+
         $subjects = isset($_POST['subjects']) ? $_POST['subjects'] : [];
         $sections = isset($_POST['sections']) ? $_POST['sections'] : [];
-    
-        // Call the User model to register the student
-        $register = $this->user->register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections, $prelim, $semester);
-    
+
+        $register = $this->user->register(
+            $firstName, $lastName, $student_id, $contact, $email,
+            $password, $role, $imageName, $subjects, $sections,
+            $prelim, $semester, $faculty
+        );
+
         if ($register) {
-            // Send email (as before)
             if ($this->sendEmail($firstName, $email, $student_id, $password)) {
                 return ["success" => true, "message" => "Registration successful! Check your email for login details."];
             } else {
-                return ["success" => false, "message" => "Registration successful, but failed to send email."];
+                return ["success" => false, "message" => "Registered, but failed to send email."];
             }
-        } else {
-            return ["success" => false, "message" => "Error registering user."];
         }
+
+        return ["success" => false, "message" => "Error registering user."];
     }
-    
+
 
     private function sendEmail($firstName, $email,  $student_id, $password) {
         $mail = new PHPMailer(true);
