@@ -70,33 +70,67 @@ class ScheduleController {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    
     public function addSchedule() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
-                'faculty' => $_POST['faculty'] ?? '',
-                'day_of_week' => $_POST['day_of_week'] ?? '',
-                'subject' => $_POST['subject'] ?? '',
-                'month_from' => $_POST['month_from'] ?? '',
-                'month_to' => $_POST['month_to'] ?? '',
-                'room' => $_POST['room'] ?? '',
-                'department' => $_POST['department'] ?? '',
-                'time_from' => $_POST['time_from'] ?? '',
-                'time_to' => $_POST['time_to'] ?? '',
-                'course' => $_POST['course'] ?? '',
-                'section' => $_POST['section'] ?? '',
-                'building' => $_POST['building'] ?? ''
-
+                'faculty' => htmlspecialchars(trim($_POST['faculty'] ?? '')),
+                'day_of_week' => htmlspecialchars(trim($_POST['day_of_week'] ?? '')),
+                'subject' => htmlspecialchars(trim($_POST['subject'] ?? '')),
+                'month_from' => htmlspecialchars(trim($_POST['month_from'] ?? '')),
+                'month_to' => htmlspecialchars(trim($_POST['month_to'] ?? '')),
+                'room' => htmlspecialchars(trim($_POST['room'] ?? '')),
+                'department' => htmlspecialchars(trim($_POST['department'] ?? '')),
+                'time_from' => htmlspecialchars(trim($_POST['time_from'] ?? '')),
+                'time_to' => htmlspecialchars(trim($_POST['time_to'] ?? '')),
+                'course' => htmlspecialchars(trim($_POST['course'] ?? '')),
+                'section' => htmlspecialchars(trim($_POST['section'] ?? '')),
+                'building' => htmlspecialchars(trim($_POST['building'] ?? ''))
             ];
-
-            if ($this->scheduleModel->addSchedule($data)) {
-                echo json_encode(['status' => 'success', 'message' => 'Schedule added successfully']);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => 'Failed to add schedule']);
+    
+            try {
+                // Calculate duration of new schedule
+                $newFrom = new \DateTime($data['time_from']);
+                $newTo = new \DateTime($data['time_to']);
+                $newDuration = ($newTo->getTimestamp() - $newFrom->getTimestamp()) / 3600;
+    
+                // Check existing total for the day for this faculty
+                $query = "SELECT time_from, time_to FROM schedules 
+                          WHERE faculty = :faculty AND month_from = :day";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':faculty', $data['faculty']);
+                $stmt->bindParam(':day', $data['month_from']);
+                $stmt->execute();
+                $existingSchedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+                $totalHours = 0;
+                foreach ($existingSchedules as $sched) {
+                    $from = new \DateTime($sched['time_from']);
+                    $to = new \DateTime($sched['time_to']);
+                    $hours = ($to->getTimestamp() - $from->getTimestamp()) / 3600;
+                    $totalHours += $hours;
+                }
+    
+                if (($totalHours + $newDuration) > 8) {
+                    echo json_encode(['status' => 'error', 'message' => 'Faculty can only have up to 8 hours of schedule per day']);
+                    exit();
+                }
+    
+                // Proceed to add schedule
+                if ($this->scheduleModel->addSchedule($data)) {
+                    echo json_encode(['status' => 'success', 'message' => 'Schedule added successfully']);
+                } else {
+                    echo json_encode(['status' => 'error', 'message' => 'Failed to add schedule']);
+                }
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
             }
+    
             exit();
         }
     }
-}
+}    
 
 
 // Handle requests

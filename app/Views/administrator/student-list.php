@@ -54,9 +54,19 @@ include "./layout/sidebar.php";
         <a href="?delete=<?= $student['id'] ?>" 
            onclick="return confirm('Are you sure you want to delete this student?')" 
            class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Delete</a>
-        <button type="button" 
-                onclick='viewStudent(<?= json_encode($student) ?>)' 
-                class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">View</button>
+           <button type="button"
+    onclick="viewStudent(
+        '<?= htmlspecialchars($student['id']) ?>',
+        '<?= htmlspecialchars($student['first_name']) ?>',
+        '<?= htmlspecialchars($student['last_name']) ?>',
+        '<?= htmlspecialchars($student['email']) ?>',
+        '<?= htmlspecialchars($student['student_id']) ?>',
+        '<?= htmlspecialchars($student['contact']) ?>'
+    )"
+    class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+    View
+</button>
+
     </td>
 </tr>
 <?php endforeach; ?>
@@ -66,33 +76,41 @@ include "./layout/sidebar.php";
     </div>
 </div>
 
-<!-- Modal -->
-<div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white p-6 rounded-lg w-96 relative">
-        <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500">&times;</button>
-        <h3 class="text-xl font-semibold mb-4">Student Information</h3>
-        <p><strong>First Name:</strong> <span id="modalFirstName"></span></p>
-        <p><strong>Last Name:</strong> <span id="modalLastName"></span></p>
-        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
-        <p><strong>Student ID:</strong> <span id="modalStudentId"></span></p>
-        <p><strong>Contact:</strong> <span id="modalContact"></span></p>
-    </div>
+<div id="viewStudentModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+  <div class="bg-white rounded-lg shadow-lg w-96 p-6 relative">
+    <h2 class="text-xl font-bold mb-4">Student Details</h2>
+    <!-- <p><strong>ID:</strong> <span id="view_id"></span></p> -->
+    <p><strong>First Name:</strong> <span id="view_first_name"></span></p>
+    <p><strong>Last Name:</strong> <span id="view_last_name"></span></p>
+    <p><strong>Email:</strong> <span id="view_email"></span></p>
+    <p><strong>Student ID:</strong> <span id="view_student_id"></span></p>
+    <p><strong>Contact:</strong> <span id="view_contact"></span></p>
+    <button onclick="closeModal()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Close</button>
+  </div>
 </div>
 
 
+
 <script>
-function viewStudent(student) {
-    document.getElementById('modalFirstName').innerText = student.first_name;
-    document.getElementById('modalLastName').innerText = student.last_name;
-    document.getElementById('modalEmail').innerText = student.email;
-    document.getElementById('modalStudentId').innerText = student.student_id;
-    document.getElementById('modalContact').innerText = student.contact;
-    document.getElementById('viewModal').classList.remove('hidden');
+function viewStudent(id, firstName, lastName, email, studentId, contact) {
+    // document.getElementById('view_id').textContent = id;
+    document.getElementById('view_first_name').textContent = firstName;
+    document.getElementById('view_last_name').textContent = lastName;
+    document.getElementById('view_email').textContent = email;
+    document.getElementById('view_student_id').textContent = studentId;
+    document.getElementById('view_contact').textContent = contact;
+
+    document.getElementById('viewStudentModal').classList.remove('hidden');
 }
 
 function closeModal() {
-    document.getElementById('viewModal').classList.add('hidden');
+    document.getElementById('viewStudentModal').classList.add('hidden');
 }
+</script>
+
+
+<script>
+
 
 
     document.getElementById('add-subject').addEventListener('click', function() {
@@ -112,32 +130,32 @@ function closeModal() {
 
 
     <script>
-function viewStudent(student) {
-    document.getElementById('modalFirstName').innerText = student.first_name;
-    document.getElementById('modalLastName').innerText = student.last_name;
-    document.getElementById('modalEmail').innerText = student.email;
-    document.getElementById('modalStudentId').innerText = student.student_id;
-    document.getElementById('modalContact').innerText = student.contact;
-    document.getElementById('viewModal').classList.remove('hidden');
-}
+// function viewStudent(student) {
+//     document.getElementById('modalFirstName').innerText = student.first_name;
+//     document.getElementById('modalLastName').innerText = student.last_name;
+//     document.getElementById('modalEmail').innerText = student.email;
+//     document.getElementById('modalStudentId').innerText = student.student_id;
+//     document.getElementById('modalContact').innerText = student.contact;
+//     document.getElementById('viewModal').classList.remove('hidden');
+// }
 
-function closeModal() {
-    document.getElementById('viewModal').classList.add('hidden');
-}
+// function closeModal() {
+//     document.getElementById('viewModal').classList.add('hidden');
+// }
 
-        function viewStudent(id) {
-            fetch(`get_student.php?id=${id}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("modalName").innerText = data.first_name + " " + data.last_name;
-                    document.getElementById("modalEmail").innerText = data.email;
-                    document.getElementById("studentModal").classList.remove("hidden");
-                });
-        }
+//         function viewStudent(id) {
+//             fetch(`get_student.php?id=${id}`)
+//                 .then(response => response.json())
+//                 .then(data => {
+//                     document.getElementById("modalName").innerText = data.first_name + " " + data.last_name;
+//                     document.getElementById("modalEmail").innerText = data.email;
+//                     document.getElementById("studentModal").classList.remove("hidden");
+//                 });
+//         }
 
-        function closeModal() {
-            document.getElementById("studentModal").classList.add("hidden");
-        }
+//         function closeModal() {
+//             document.getElementById("studentModal").classList.add("hidden");
+//         }
 
         function deleteStudent(id) {
             Swal.fire({

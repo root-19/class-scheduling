@@ -112,16 +112,25 @@ include './layout/sidebar.php';
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['email']); ?></td>
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['contact']); ?></td>
                                 <td class="p-3 border"><?php echo htmlspecialchars($faculty['address']); ?></td>
-                                <!-- <td class="p-3 border"><?php echo htmlspecialchars($faculty['password']); ?></td> -->
+                                <td class="p-3 border hidden"><?php echo htmlspecialchars($faculty['password']); ?></td>
 
 
                                 <td class="p-3 border">
                                     <div class="flex space-x-2">
-                                        <button 
-                                            onclick="editFaculty(<?php echo $faculty['id']; ?>, '<?php echo $faculty['faculty_id']; ?>', '<?php echo addslashes($faculty['name']); ?>', '<?php echo $faculty['email']; ?>', '<?php echo $faculty['contact']; ?>')" 
-                                            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-                                            Edit
-                                        </button>
+                                    <button 
+    onclick="editFaculty(
+        <?php echo $faculty['id']; ?>, 
+        '<?php echo $faculty['faculty_id']; ?>', 
+        '<?php echo addslashes($faculty['name']); ?>', 
+        '<?php echo $faculty['email']; ?>', 
+        '<?php echo $faculty['contact']; ?>',
+        '<?php echo addslashes($faculty['address']); ?>'
+    )" 
+    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+    Edit
+</button>
+
+                               
                                         <a href="faculty.php?delete=<?php echo $faculty['id']; ?><?php echo isset($_GET['page']) ? '&page='.$_GET['page'] : ''; ?>" 
                                            onclick="return confirm('Are you sure you want to delete this faculty member?')" 
                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">

@@ -57,6 +57,8 @@ include "./layout/sidebar.php";
         <p><strong>Course:</strong> <span id="modalCourse"></span></p>
         <p><strong>Section:</strong> <span id="modalSection"></span></p>
         <p><strong>Time:</strong> <span id="modalTime"></span></p>
+        <!-- <p><strong>Time end:</strong> <span id="modalTime_end"></span></p> -->
+
         <p><strong>building:</strong> <span id="modalBuilding"></span></p>
 
         <div class="mt-6 flex justify-end">
