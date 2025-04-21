@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IfYouDDOSThisUrGay</title>
+    <!-- <title>IfYouDDOSThisUrGay</title> -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- <script src="../../../Resources/js/modal-faculty.js"></script> -->
 </head>
@@ -43,10 +43,10 @@
     <!-- Dropdown menu -->
     <ul id="scheduleDropdown" class="absolute left-0 mt-1 bg-blue-700 text-black shadow-lg rounded-lg hidden w-48">
         <li>
-            <a href="../../Views/administrator/add_schedule.php" class="block px-4 py-2 hover:bg-gray-200">Add Schedule</a>
+            <a href="../../Views/faculty/add_schedule.php" class="block px-4 py-2 hover:bg-gray-200">Add Schedule</a>
         </li>
         <li>
-            <a href="../../Views/administrator/schedule.php" class="block px-4 py-2 hover:bg-gray-200">View Schedule</a>
+            <a href="../../Views/faculty/schedule.php" class="block px-4 py-2 hover:bg-gray-200">View Schedule</a>
         </li>
     </ul>
 </li>

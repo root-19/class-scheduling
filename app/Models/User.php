@@ -19,11 +19,11 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections, $prelim, $semester, $faculty) {
+    public function register($firstName, $lastName, $student_id, $contact, $email, $password, $role, $imageName, $subjects, $sections, $prelim, $semester, $faculty, $course) {
         $query = "INSERT INTO {$this->table} 
-            (first_name, last_name, student_id, contact, email, password, role, image, subjects, sections, prelim, semester, faculty) 
+            (first_name, last_name, student_id, contact, email, password, role, image, subjects, sections, prelim, semester, faculty, course) 
             VALUES 
-            (:first_name, :last_name, :student_id, :contact, :email, :password, :role, :image, :subjects, :sections, :prelim, :semester, :faculty)";
+            (:first_name, :last_name, :student_id, :contact, :email, :password, :role, :image, :subjects, :sections, :prelim, :semester, :faculty, :course)";
         
         $stmt = $this->conn->prepare($query);
 
@@ -44,6 +44,8 @@ class User {
         $stmt->bindParam(':prelim', $prelim);
         $stmt->bindParam(':semester', $semester);
         $stmt->bindParam(':faculty', $faculty);
+        $stmt->bindParam(':course', $course);
+
 
         return $stmt->execute();
     }

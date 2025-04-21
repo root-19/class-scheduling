@@ -130,7 +130,36 @@ class ScheduleController {
             exit();
         }
     }
+
+   public function getSchedulesForUser($faculty, $course, $section) {
+    $stmt = $this->conn->prepare("SELECT * FROM schedules WHERE faculty = ? AND course = ? AND section = ?");
+    $stmt->execute([$faculty, $course, $section]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $events = [];
+    foreach ($rows as $row) {
+        $events[] = [
+            'title' => $row['subject'],
+            'start' => $row['start_date'],
+            'end' => $row['end_date'],
+            'extendedProps' => [
+                'faculty' => $row['faculty'],
+                'room' => $row['room'],
+                'department' => $row['department'],
+                'course' => $row['course'],
+                'section' => $row['section'],
+                'time_from' => $row['time_from'],
+                'time_to' => $row['time_to'],
+                'building' => $row['building']
+            ]
+        ];
+    }
+
+    return $events;
+}
+
 }    
+
 
 
 // Handle requests

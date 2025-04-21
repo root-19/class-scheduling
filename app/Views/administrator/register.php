@@ -22,8 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $prelim = $_POST['prelim'] ?? '';
     $semester = $_POST['semester'] ?? '';
-    $sections = $_POST['sections'] ?? [];
+    $sections = $_POST['sections'] ?? '';
     $subjects = $_POST['subjects'] ?? [];
+    $course = $_POST['course'] ?? '';
 
     // Call register method with all required parameters
     $result = $auth->register(
@@ -38,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sections,
         $prelim,
         $semester,
-        $faculty
+        $faculty,
+        $course
     );
 
     if ($result['success']) {
@@ -50,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch registered students
-$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact, image, subjects, sections, faculty FROM users WHERE role = 'student'");
+$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact, image, subjects, sections, faculty, course FROM users WHERE role = 'student'");
 $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -67,6 +69,14 @@ if (isset($_GET['delete'])) {
 $facultyQuery = $conn->query("SELECT * FROM faculty");
 $faculties = $facultyQuery->fetchAll(PDO::FETCH_ASSOC);
 
+
+// Fetch students and their grades
+foreach ($students as &$student) {
+    $stmt = $conn->prepare("SELECT subject, prelim, midterm, final FROM grades WHERE student_id = ?");
+    $stmt->execute([$student['id']]);
+    $student['grades'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+unset($student); // best practice
 include './layout/sidebar.php';
 ?>
 
@@ -101,7 +111,7 @@ include './layout/sidebar.php';
         <input type="text" name="sections" placeholder="Section" class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="text" name="prelim" placeholder="Prelim" required class="w-full px-4 py-2 border rounded-lg focus:ring">
 <input type="text" name="semester" placeholder="Semester" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-
+<input type="text" name="course" placeholder="Course" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="text" name="contact" placeholder="Contact Number" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="file" name="image" accept="image/*" class="w-full px-4 py-2 border rounded-lg focus:ring">
@@ -117,7 +127,7 @@ include './layout/sidebar.php';
     </form>
 </div>
 
-    <!-- Registered Students Table -->
+ /   <!-- Registered Students Table -->
     <div class="bg-white shadow-lg rounded-lg p-6 mt-8">
         <h2 class="text-lg font-semibold mb-3">Registered Students</h2>
         <table class="w-full border-collapse border">
@@ -133,15 +143,13 @@ include './layout/sidebar.php';
     </tr>
 </thead>
            <!-- Add buttons to each row -->
-<tbody>
-<?php foreach ($students as $student): ?>
+           <?php foreach ($students as $student): ?>
 <tr class="border">
     <td class="p-2 border text-center"><?= htmlspecialchars($student['id']) ?></td>
     <img src="/uploads/<?= htmlspecialchars($student['image']) ?>" 
-     alt="Student Image" 
-     class="w-16 h-16 object-cover mx-auto rounded-full hidden">
-     <td class="p-2 border text-center hidden"><?= htmlspecialchars($student['faculty_name']) ?></td>
-  
+         alt="Student Image" 
+         class="w-16 h-16 object-cover mx-auto rounded-full hidden">
+    <td class="p-2 border text-center hidden"><?= htmlspecialchars($student['faculty_name']) ?></td>
     <td class="p-2 border text-center"><?= htmlspecialchars($student['first_name']) ?></td>
     <td class="p-2 border text-center"><?= htmlspecialchars($student['last_name']) ?></td>
     <td class="p-2 border text-center"><?= htmlspecialchars($student['email']) ?></td>
@@ -152,18 +160,15 @@ include './layout/sidebar.php';
     <td class="p-2 border text-center hidden"><?= htmlspecialchars($student['prelim']) ?></td>
     <td class="p-2 border text-center hidden"><?= htmlspecialchars($student['semester']) ?></td>
 
-
-
-
     <td class="p-2 border text-center space-x-2">
         <a href="?delete=<?= $student['id'] ?>" 
            onclick="return confirm('Are you sure you want to delete this student?')" 
            class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Delete</a>
-           <button type="button" 
-    onclick='viewStudent(<?= json_encode($student) ?>)' 
-    class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-    View
-</button>
+
+        <button type="button" 
+                onclick='openModal(<?= json_encode($student) ?>)' 
+                class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">View</button>
+    </td>
 </tr>
 <?php endforeach; ?>
 </tbody>
@@ -171,58 +176,69 @@ include './layout/sidebar.php';
         </table>
     </div>
 </div>
-<!-- Modal -->
 
-<div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white p-6 rounded-lg w-96 relative">
-        <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500">&times;</button>
-        <h3 class="text-xl font-semibold mb-4">Student Information</h3>
-        <img id="modalImage" src="../../../uploads/" alt="Student Image" class="w-24 h-24 object-cover mx-auto rounded-full mb-4" />
-        <!-- <p><strong>Faculty:</strong> <span id="modalFacultyName"></span></p> -->
-        <p><strong>First Name:</strong> <span id="modalFirstName"></span></p>
-        <p><strong>Last Name:</strong> <span id="modalLastName"></span></p>
-        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
-        <p><strong>Student ID:</strong> <span id="modalStudentId"></span></p>
-        <p><strong>Contact:</strong> <span id="modalContact"></span></p>
-        <p><strong>Section:</strong> <span id="modalSections"></span></p>
-        <!-- <p><strong>Prelim:</strong> <span id="modalPrelim"></span></p> -->
-        <p><strong>Subjects:</strong>
-            <ul id="modalSubjects" class="list-disc list-inside text-sm text-gray-700"></ul>
-        </p>
+
+<!-- Modal -->
+<div id="viewModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-full max-w-3xl shadow-lg relative">
+        <button onclick="closeModal()" class="absolute top-2 right-2 text-red-500 text-2xl font-bold">&times;</button>
+
+        <div class="flex space-x-6 items-center mb-4">
+            <img id="modalImage" src="" alt="Student Image" class="w-24 h-24 object-cover rounded-full border">
+            <div>
+                <h2 id="modalFirstName" class="text-2xl font-bold"></h2>
+                <p id="modalLastName" class="text-lg text-gray-700"></p>
+                <p class="text-sm text-gray-600">Email: <span id="modalEmail"></span></p>
+                <p class="text-sm text-gray-600">Student ID: <span id="modalStudentId"></span></p>
+                <p class="text-sm text-gray-600">Contact: <span id="modalContact"></span></p>
+                <p class="text-sm text-gray-600">Section: <span id="modalSections"></span></p>
+            </div>
+        </div>
+
+        <h3 class="mt-4 text-lg font-semibold">Grades:</h3>
+        <table class="w-full mt-2 text-sm border">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="border px-4 py-2">Subject</th>
+                    <th class="border px-4 py-2">Prelim</th>
+                    <th class="border px-4 py-2">Midterm</th>
+                    <th class="border px-4 py-2">Final</th>
+                </tr>
+            </thead>
+            <tbody id="modalGrades" class="bg-white">
+                <!-- Grades injected by JS -->
+            </tbody>
+        </table>
     </div>
 </div>
 
 
 
-
-
 <script>
-function viewStudent(student) {
-     // Set image
-     document.getElementById('modalImage').src = `/uploads/${student.image}`;
-    // document.getElementById('modalFacultyName').innerText = student.faculty_name;
+function openModal(student) {
+    document.getElementById('modalImage').src = `/uploads/${student.image}`;
+    document.getElementById('modalFirstName').textContent = student.first_name;
+    document.getElementById('modalLastName').textContent = student.last_name;
+    document.getElementById('modalEmail').textContent = student.email;
+    document.getElementById('modalStudentId').textContent = student.student_id;
+    document.getElementById('modalContact').textContent = student.contact;
+    document.getElementById('modalSections').textContent = student.sections;
 
-    document.getElementById('modalFirstName').innerText = student.first_name;
-    document.getElementById('modalLastName').innerText = student.last_name;
-    document.getElementById('modalEmail').innerText = student.email;
-    document.getElementById('modalStudentId').innerText = student.student_id;
-    document.getElementById('modalContact').innerText = student.contact;
-    document.getElementById('modalSections').innerText = student.sections;
+    const gradesBody = document.getElementById('modalGrades');
+    gradesBody.innerHTML = '';
 
-
-    const subjects = JSON.parse(student.subjects || '[]');
-    
-    const modalSubjects = document.getElementById('modalSubjects');
-    // const modalSections = document.getElementById('modalSections');
-
-    modalSubjects.innerHTML = ''; 
-    // modalSections.innerHTML = ''; 
-
-
-    for (let i = 0; i < subjects.length; i++) {
-        const li = document.createElement('li');
-        li.textContent = `${subjects[i]}}`; 
-        modalSubjects.appendChild(li);
+    if (student.grades && student.grades.length > 0) {
+        student.grades.forEach(grade => {
+            const row = `<tr>
+                <td class="border px-4 py-2">${grade.subject}</td>
+                <td class="border px-4 py-2">${grade.prelim}</td>
+                <td class="border px-4 py-2">${grade.midterm}</td>
+                <td class="border px-4 py-2">${grade.final}</td>
+            </tr>`;
+            gradesBody.innerHTML += row;
+        });
+    } else {
+        gradesBody.innerHTML = `<tr><td colspan="4" class="text-center p-2">No grades found.</td></tr>`;
     }
 
     document.getElementById('viewModal').classList.remove('hidden');
@@ -231,19 +247,16 @@ function viewStudent(student) {
 function closeModal() {
     document.getElementById('viewModal').classList.add('hidden');
 }
+</script>
 
-
-    document.getElementById('add-subject').addEventListener('click', function() {
-        const subjectContainer = document.getElementById('subjects-container');
-        
- 
-        const newSubject = document.createElement('div');
-        newSubject.classList.add('flex', 'space-x-4');
-        newSubject.innerHTML = `
-            <input type="text" name="subjects[]" placeholder="Subject" class="w-full px-4 py-2 border rounded-lg focus:ring">
-           
-        `;
-        
-        subjectContainer.appendChild(newSubject);
+<script>
+    document.getElementById('add-subject').addEventListener('click', function () {
+        const container = document.getElementById('subjects-container');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'subjects[]';
+        input.placeholder = 'Subject';
+        input.className = 'w-full px-4 py-2 border rounded-lg focus:ring mt-2';
+        container.appendChild(input);
     });
 </script>

@@ -17,7 +17,7 @@ class AuthController {
         $this->user = new User($conn);
     }
 
-    public function register($firstName, $lastName, $email, $student_id, $contact, $password, $role, $subjects, $sections, $prelim, $semester, $faculty)
+    public function register($firstName, $lastName, $email, $student_id, $contact, $password, $role, $subjects, $sections, $prelim, $semester, $faculty, $course)
     {
         $imageName = null;
 
@@ -37,7 +37,7 @@ class AuthController {
         $register = $this->user->register(
             $firstName, $lastName, $student_id, $contact, $email,
             $password, $role, $imageName, $subjects, $sections,
-            $prelim, $semester, $faculty
+            $prelim, $semester, $faculty,$course
         );
 
         if ($register) {
@@ -105,8 +105,11 @@ class AuthController {
             session_start();
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['first_name'] = $user['first_name']; 
-            $_SESSION['last_name'] = $user['last_name']; 
+            $_SESSION['last_name'] = $user['last_name'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['course'] = $user['course'];
+            $_SESSION['sections'] = $user['sections']; // Ensure that this is being set correctly from the DB
+            $_SESSION['faculty'] = $user['faculty_name'];
     
             // Redirect based on role
             if ($user['role'] == "student") {

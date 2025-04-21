@@ -6,36 +6,45 @@ use App\Config\Database;
 $db = new Database();
 $conn = $db->connect();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['student_id']) && !empty($_POST['grades'])) {
-    $studentId = $_POST['student_id'];
-    $grades = $_POST['grades'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $studentId = $_POST['student_id'] ?? null;
+    $subjectName = trim($_POST['new_subject'] ?? '');
+    $grades = $_POST['new_grades'] ?? [];
 
-    foreach ($grades as $subject => $gradeSet) {
-        $subject = trim($subject);
-        if (empty($subject)) continue;
-
-        $prelim = isset($gradeSet['prelim']) && $gradeSet['prelim'] !== '' ? floatval($gradeSet['prelim']) : null;
-        $midterm = isset($gradeSet['midterm']) && $gradeSet['midterm'] !== '' ? floatval($gradeSet['midterm']) : null;
-        $final = isset($gradeSet['final']) && $gradeSet['final'] !== '' ? floatval($gradeSet['final']) : null;
-
-        // Check if grade already exists
-        $check = $conn->prepare("SELECT id FROM grades WHERE student_id = ? AND subject = ?");
-        $check->execute([$studentId, $subject]);
-
-        if ($check->rowCount() > 0) {
-            // Update
-            $update = $conn->prepare("UPDATE grades SET prelim = ?, midterm = ?, final = ?, updated_at = NOW() WHERE student_id = ? AND subject = ?");
-            $update->execute([$prelim, $midterm, $final, $studentId, $subject]);
-        } else {
-            // Insert
-            $insert = $conn->prepare("INSERT INTO grades (student_id, subject, prelim, midterm, final, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-            $insert->execute([$studentId, $subject, $prelim, $midterm, $final]);
-        }
+    if (!$studentId || !$subjectName || empty($grades)) {
+        echo "Incomplete data.";
+        exit();
     }
 
-    header("Location: view-user.php?id=" . urlencode($studentId));
+    // Check if subject already exists for this student
+    $checkStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ? AND LOWER(subject) = LOWER(?)");
+    $checkStmt->execute([$studentId, $subjectName]);
+
+    if ($checkStmt->rowCount() > 0) {
+        echo "This subject already has grades recorded.";
+        exit();
+    }
+
+    $stmt = $conn->prepare("
+        INSERT INTO grades (student_id, subject, prelim, midterm, final)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+
+    $stmt->execute([
+        $studentId,
+        $subjectName,
+        $grades['prelim'],
+        $grades['midterm'],
+        $grades['final']
+    ]);
+
+    header("Location: view-user.php?id=" . $studentId);
     exit();
+
+
+// Refresh the page to prevent form resubmission
+header("Location: view-user.php?id=" . $id);
+exit();
 }
 
-echo "Invalid request.";
-exit();
+?>
