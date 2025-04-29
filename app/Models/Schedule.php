@@ -40,5 +40,13 @@ class Schedule {
             return false;
         }
     }
+
+    public function getTotalSchedules() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }
 ?>

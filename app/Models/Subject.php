@@ -39,4 +39,13 @@ class Subject {
         $stmt->bindParam(1, $id);
         return $stmt->execute();
     }
+
+    // Get total subjects count
+    public function getTotalSubjects() {
+        $query = "SELECT COUNT(*) as total FROM subjects";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }

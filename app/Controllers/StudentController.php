@@ -30,4 +30,12 @@ class StudentController {
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    public function getTotalStudents() {
+        $query = "SELECT COUNT(*) as total FROM users WHERE role = 'student'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }

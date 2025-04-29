@@ -80,118 +80,131 @@ $facultyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 include './layout/sidebar.php';
 ?>
 <script src="../../Resources/js/modal-faculty.js"></script>
-<div class="p-6 w-full">
-    <div class="p-4 border-2 border-gray-200 rounded-lg">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Faculty List</h1>
 
-        <!-- Add Faculty Button -->
-        <button onclick="openModal('addFacultyModal')" class="bg-blue-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md transition">
-            + Add Faculty
-        </button>
-
-        <!-- Faculty Table -->
-        <div class="mt-6 overflow-x-auto">
-            <table class="w-full border border-gray-200 shadow-md rounded-lg overflow-hidden">
-                <thead class="bg-blue-600 text-white text-md">
-                    <tr>
-                        <th class="p-3 border">Faculty ID</th>
-                        <th class="p-3 border">Name</th>
-                        <th class="p-3 border">Email</th>
-                        <th class="p-3 border">Contact</th>
-                        <th class="p-3 border">Address</th>
-                        <!-- <th class="p-3 border">Password</th> -->
-                        <th class="p-3 border">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-gray-100 text-gray-800">
-                    <?php if (count($facultyList) > 0): ?>
-                        <?php foreach ($facultyList as $faculty): ?>
-                            <tr class="hover:bg-gray-200 transition-colors">
-                                <td class="p-3 border"><?php echo htmlspecialchars($faculty['faculty_id']); ?></td>
-                                <td class="p-3 border"><?php echo htmlspecialchars($faculty['name']); ?></td>
-                                <td class="p-3 border"><?php echo htmlspecialchars($faculty['email']); ?></td>
-                                <td class="p-3 border"><?php echo htmlspecialchars($faculty['contact']); ?></td>
-                                <td class="p-3 border"><?php echo htmlspecialchars($faculty['address']); ?></td>
-                                <td class="p-3 border hidden"><?php echo htmlspecialchars($faculty['password']); ?></td>
-
-
-                                <td class="p-3 border">
-                                    <div class="flex space-x-2">
-                                    <button 
-    onclick="editFaculty(
-        <?php echo $faculty['id']; ?>, 
-        '<?php echo $faculty['faculty_id']; ?>', 
-        '<?php echo addslashes($faculty['name']); ?>', 
-        '<?php echo $faculty['email']; ?>', 
-        '<?php echo $faculty['contact']; ?>',
-        '<?php echo addslashes($faculty['address']); ?>'
-    )" 
-    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-    Edit
-</button>
-
-                               
-                                        <a href="faculty.php?delete=<?php echo $faculty['id']; ?><?php echo isset($_GET['page']) ? '&page='.$_GET['page'] : ''; ?>" 
-                                           onclick="return confirm('Are you sure you want to delete this faculty member?')" 
-                                           class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-                                            Delete
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" class="p-3 text-center">No faculty records found</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-            
-            <!-- Pagination Controls -->
-            <?php if ($totalPages > 1): ?>
-            <div class="mt-4 flex justify-between items-center">
-                <div class="text-sm text-gray-600">
-                    Showing <?php echo $offset + 1; ?> to <?php echo min($offset + $itemsPerPage, $totalRecords); ?> of <?php echo $totalRecords; ?> entries
+<div class="p-8 w-full bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Header Section -->
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Faculty Management</h1>
+                    <button onclick="openModal('addFacultyModal')" 
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add New Faculty
+                    </button>
                 </div>
-                <div class="flex space-x-2">
-                    <?php if ($currentPage > 1): ?>
-                        <a href="faculty.php?page=<?php echo $currentPage - 1; ?>" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                            Previous
-                        </a>
-                    <?php else: ?>
-                        <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed">
-                            Previous
-                        </button>
-                    <?php endif; ?>
-                    
-                    <div class="flex space-x-1">
-                        <?php 
-                        // Show limited number of page links
-                        $startPage = max(1, $currentPage - 2);
-                        $endPage = min($totalPages, $startPage + 4);
-                        if ($endPage - $startPage < 4) {
-                            $startPage = max(1, $endPage - 4);
-                        }
-                        
-                        for ($i = $startPage; $i <= $endPage; $i++): 
-                        ?>
-                            <a href="faculty.php?page=<?php echo $i; ?>" 
-                               class="px-3 py-2 rounded <?php echo ($i == $currentPage) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'; ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endfor; ?>
-                    </div>
+            </div>
 
-                    <?php if ($currentPage < $totalPages): ?>
-                        <a href="faculty.php?page=<?php echo $currentPage + 1; ?>" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                            Next
-                        </a>
-                    <?php else: ?>
-                        <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed">
-                            Next
-                        </button>
-                    <?php endif; ?>
+            <!-- Faculty Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Faculty ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php if (count($facultyList) > 0): ?>
+                            <?php foreach ($facultyList as $faculty): ?>
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($faculty['faculty_id']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($faculty['name']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($faculty['email']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($faculty['contact']); ?></td>
+                                    <td class="px-6 py-4 text-sm text-gray-900"><?php echo htmlspecialchars($faculty['address']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <div class="flex items-center justify-center space-x-2">
+                                            <button 
+                                                onclick="editFaculty(
+                                                    <?php echo $faculty['id']; ?>, 
+                                                    '<?php echo $faculty['faculty_id']; ?>', 
+                                                    '<?php echo addslashes($faculty['name']); ?>', 
+                                                    '<?php echo $faculty['email']; ?>', 
+                                                    '<?php echo $faculty['contact']; ?>',
+                                                    '<?php echo addslashes($faculty['address']); ?>'
+                                                )" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                                Edit
+                                            </button>
+                                            <a href="faculty.php?delete=<?php echo $faculty['id']; ?><?php echo isset($_GET['page']) ? '&page='.$_GET['page'] : ''; ?>" 
+                                               onclick="return confirm('Are you sure you want to delete this faculty member?')" 
+                                               class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                                Delete
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No faculty records found</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <?php if ($totalPages > 1): ?>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        Showing <?php echo $offset + 1; ?> to <?php echo min($offset + $itemsPerPage, $totalRecords); ?> of <?php echo $totalRecords; ?> entries
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <?php if ($currentPage > 1): ?>
+                            <a href="faculty.php?page=<?php echo $currentPage - 1; ?>" 
+                                class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                Previous
+                            </a>
+                        <?php else: ?>
+                            <button disabled class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm cursor-not-allowed">
+                                Previous
+                            </button>
+                        <?php endif; ?>
+                        
+                        <div class="flex items-center space-x-1">
+                            <?php 
+                            $startPage = max(1, $currentPage - 2);
+                            $endPage = min($totalPages, $startPage + 4);
+                            if ($endPage - $startPage < 4) {
+                                $startPage = max(1, $endPage - 4);
+                            }
+                            
+                            for ($i = $startPage; $i <= $endPage; $i++): 
+                            ?>
+                                <a href="faculty.php?page=<?php echo $i; ?>" 
+                                   class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm <?php echo ($i == $currentPage) ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'; ?>">
+                                    <?php echo $i; ?>
+                                </a>
+                            <?php endfor; ?>
+                        </div>
+
+                        <?php if ($currentPage < $totalPages): ?>
+                            <a href="faculty.php?page=<?php echo $currentPage + 1; ?>" 
+                                class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                Next
+                            </a>
+                        <?php else: ?>
+                            <button disabled class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm cursor-not-allowed">
+                                Next
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <?php endif; ?>
@@ -199,40 +212,117 @@ include './layout/sidebar.php';
     </div>
 </div>
 
-<!-- Modals -->
+<!-- Add Faculty Modal -->
 <div id="addFacultyModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">Add Faculty</h2>
-        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">Add New Faculty</h2>
+        </div>
+        
+        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
             <input type="hidden" name="add_faculty" value="1">
-            <input type="text" name="faculty_id" placeholder="Faculty ID" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" name="name" placeholder="Name" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" name="contact" placeholder="Contact" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" name="address" placeholder="Address" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" name="password" placeholder="password" required class="w-full px-4 py-2 border rounded mb-2">
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
+                <input type="text" name="faculty_id" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input type="text" name="name" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" name="email" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                <input type="text" name="contact" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <input type="text" name="address" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
 
-            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full">Add</button>
+            <div class="flex items-center justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeModal('addFacultyModal')" 
+                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Add Faculty
+                </button>
+            </div>
         </form>
-        <button onclick="closeModal('addFacultyModal')" class="mt-2 w-full bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
     </div>
 </div>
 
 <!-- Edit Faculty Modal -->
 <div id="editFacultyModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">Edit Faculty</h2>
-        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">Edit Faculty</h2>
+        </div>
+        
+        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
             <input type="hidden" name="edit_faculty" value="1">
             <input type="hidden" id="edit_id" name="id">
-            <input type="text" id="edit_faculty_id" name="faculty_id" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" id="edit_name" name="name" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="email" id="edit_email" name="email" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" id="edit_contact" name="contact" required class="w-full px-4 py-2 border rounded mb-2">
-            <input type="text" id="edit_address" name="address" required class="w-full px-4 py-2 border rounded mb-2">
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
+                <input type="text" id="edit_faculty_id" name="faculty_id" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input type="text" id="edit_name" name="name" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="edit_email" name="email" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                <input type="text" id="edit_contact" name="contact" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <input type="text" id="edit_address" name="address" required 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
 
-            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded w-full">Update</button>
+            <div class="flex items-center justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeModal('editFacultyModal')" 
+                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Update Faculty
+                </button>
+            </div>
         </form>
-        <button onclick="closeModal('editFacultyModal')" class="mt-2 w-full bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
     </div>
 </div>

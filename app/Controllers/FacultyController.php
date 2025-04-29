@@ -31,5 +31,9 @@ class FacultyController {
     public function deleteFaculty($id) {
         return $this->facultyModel->deleteFaculty($id);
     }
+
+    public function getTotalFaculty() {
+        return $this->facultyModel->getTotalFaculty();
+    }
 }
 

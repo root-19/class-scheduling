@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Config\Database;
+use PDO;
 
 class Course {
     private $conn;
+    private $table = 'course';
 
     public function __construct() {
         $db = new Database();
@@ -48,5 +50,13 @@ class Course {
         $stmt = $this->conn->prepare("DELETE FROM course WHERE id = ?");
         $stmt->bindParam(1, $id);
         return $stmt->execute();
+    }
+
+    public function getTotalCourses() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
     }
 }

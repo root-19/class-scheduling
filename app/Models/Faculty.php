@@ -46,5 +46,14 @@ public function addFaculty($facultyId, $name, $email, $contact, $address, $passw
         $stmt = $this->conn->prepare("DELETE FROM faculty WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
+    // Get total faculty count
+    public function getTotalFaculty() {
+        $query = "SELECT COUNT(*) as total FROM faculty";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }
 ?>

@@ -32,5 +32,9 @@ class SubjectController {
     public function getSubjects() {
         return $this->subject->getSubjects();
     }
+
+    public function getTotalSubjects() {
+        return $this->subject->getTotalSubjects();
+    }
 }
 ?>

@@ -21,9 +21,10 @@
     <nav>
       <ul class="space-y-3 text-sm font-medium">
         <li class="hover:bg-blue-700 p-3 rounded-lg flex items-center space-x-3 cursor-pointer">
-          <i data-lucide="home" class="w-5 h-5"></i>
-          <span>Home</span>
-        </li>
+        <a href="../../Views/administrator/Dashboard.php" class="hover:bg-blue-700 p-3 rounded-lg flex items-center space-x-3">
+            <i data-lucide="list" class="w-5 h-5"></i>
+            <span>Dashboard</span>
+          </a>
         <li>
           <a href="../../Views/administrator/register.php" class="hover:bg-blue-700 p-3 rounded-lg flex items-center space-x-3">
             <i data-lucide="list" class="w-5 h-5"></i>
@@ -45,7 +46,7 @@
           </ul>
         </li>
         <li>
-          <a href="../../Views/administrator/Dashboard.php" class="hover:bg-blue-700 p-3 rounded-lg flex items-center space-x-3">
+          <a href="../../Views/administrator/subject-list.php" class="hover:bg-blue-700 p-3 rounded-lg flex items-center space-x-3">
             <i data-lucide="book" class="w-5 h-5"></i>
             <span>Subject List</span>
           </a>

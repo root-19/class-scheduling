@@ -158,6 +158,10 @@ class ScheduleController {
     return $events;
 }
 
+public function getTotalSchedules() {
+    return $this->scheduleModel->getTotalSchedules();
+}
+
 }    
 
 

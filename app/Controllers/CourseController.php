@@ -47,4 +47,8 @@ class CourseController {
     public function getCourseById($id) {
         return $this->course->getCourseById($id);
     }
+
+    public function getTotalCourses() {
+        return $this->course->getTotalCourses();
+    }
 }

@@ -26,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $stmt = $conn->prepare("
-        INSERT INTO grades (student_id, subject, prelim, midterm, final)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO grades (student_id, subject, prelim, midterm, final, exam)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $subjectName,
         $grades['prelim'],
         $grades['midterm'],
-        $grades['final']
+        $grades['final'],
+        $grades['exam']
     ]);
 
     header("Location: view-user.php?id=" . $studentId);
@@ -48,3 +49,10 @@ exit();
 }
 
 ?>
+
+<div class="mb-4">
+    <label for="exam" class="block text-sm font-medium text-gray-700">Exam Grade</label>
+    <input type="number" step="0.01" min="0" max="100" name="exam" id="exam" 
+           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+           value="<?= isset($grade['exam']) ? $grade['exam'] : '' ?>">
+</div>
