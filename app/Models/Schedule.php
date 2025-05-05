@@ -4,6 +4,7 @@ namespace App\Models;
 require_once __DIR__ . '/../Config/Database.php';
 use PDO;
 use App\Config\Database;
+use PDOException;
 
 class Schedule {
     private $conn;
@@ -47,6 +48,39 @@ class Schedule {
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['total'] ?? 0;
+    }
+
+    public function updateSchedule($id, $data) {
+        $query = "UPDATE " . $this->table . " SET 
+            faculty = :faculty,
+            room = :room,
+            department = :department,
+            course = :course,
+            section = :section,
+            time_from = :time_from,
+            time_to = :time_to,
+            building = :building,
+            month_from = :month_from
+            WHERE id = :id";
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            
+            // Log the update attempt
+            error_log("Attempting to update schedule ID: " . $id);
+            error_log("Update data: " . print_r($data, true));
+            
+            $result = $stmt->execute(array_merge($data, ['id' => $id]));
+            
+            if (!$result) {
+                error_log("Update failed. Error info: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Update Schedule Error: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>

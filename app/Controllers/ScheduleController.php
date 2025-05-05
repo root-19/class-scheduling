@@ -2,14 +2,17 @@
 namespace App\Controllers;
 
 require_once __DIR__ . '/../Models/Schedule.php';
+require_once __DIR__ . '/../Models/Notification.php';
 require_once __DIR__ . '/../Config/Database.php';
 
 use App\Models\Schedule;
+use App\Models\Notification;
 use App\Config\Database;
 use PDO;
 
 class ScheduleController {
     private $scheduleModel;
+    private $notificationModel;
     private $db;
     private $conn;
 
@@ -17,6 +20,7 @@ class ScheduleController {
         $this->db = new Database();
         $this->conn = $this->db->connect();
         $this->scheduleModel = new Schedule($this->conn);
+        $this->notificationModel = new Notification();
     }
 
     public function getSchedules($department = null) {
@@ -162,16 +166,131 @@ public function getTotalSchedules() {
     return $this->scheduleModel->getTotalSchedules();
 }
 
+public function updateSchedule($id, $data) {
+    try {
+        // Validate time constraints
+        $newFrom = new \DateTime($data['time_from']);
+        $newTo = new \DateTime($data['time_to']);
+        $newDuration = ($newTo->getTimestamp() - $newFrom->getTimestamp()) / 3600;
+
+        // Check existing total for the day for this faculty
+        $query = "SELECT time_from, time_to FROM schedules 
+                  WHERE faculty = :faculty AND id != :id AND month_from = :month_from";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':faculty', $data['faculty']);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':month_from', $data['month_from']);
+        $stmt->execute();
+        $existingSchedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalHours = 0;
+        foreach ($existingSchedules as $sched) {
+            $from = new \DateTime($sched['time_from']);
+            $to = new \DateTime($sched['time_to']);
+            $hours = ($to->getTimestamp() - $from->getTimestamp()) / 3600;
+            $totalHours += $hours;
+        }
+
+        if (($totalHours + $newDuration) > 8) {
+            return [
+                'status' => 'error',
+                'message' => 'Faculty can only have up to 8 hours of schedule per day'
+            ];
+        }
+
+        // Update the schedule
+        $success = $this->scheduleModel->updateSchedule($id, $data);
+        
+        if ($success) {
+            // Create notification for the faculty
+            $notificationMessage = sprintf(
+                'Your schedule has been updated. New time: %s - %s, Room: %s, Building: %s',
+                $data['time_from'],
+                $data['time_to'],
+                $data['room'],
+                $data['building']
+            );
+            
+            $this->notificationModel->createNotification(
+                $data['faculty'],
+                $notificationMessage,
+                'schedule_update'
+            );
+            
+            return [
+                'status' => 'success',
+                'message' => 'Schedule updated successfully'
+            ];
+        } else {
+            return [
+                'status' => 'error',
+                'message' => 'Failed to update schedule'
+            ];
+        }
+    } catch (PDOException $e) {
+        error_log("Update Schedule Error: " . $e->getMessage());
+        return [
+            'status' => 'error',
+            'message' => 'An error occurred while updating the schedule'
+        ];
+    }
+}
+
+public function getNotifications($faculty = null) {
+    $query = "SELECT * FROM notifications";
+    $params = [];
+    
+    if ($faculty) {
+        $query .= " WHERE faculty = :faculty";
+        $params['faculty'] = $faculty;
+    }
+    
+    $query .= " ORDER BY created_at DESC";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+public function markNotificationAsRead($id) {
+    $query = "UPDATE notifications SET is_read = 1 WHERE id = :id";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute(['id' => $id]);
+}
+
+// Add this method to handle all requests
+public function handleRequest() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isset($_POST['scheduleId'])) {
+            // Handle schedule update
+            $data = [
+                'faculty' => htmlspecialchars(trim($_POST['faculty'] ?? '')),
+                'room' => htmlspecialchars(trim($_POST['room'] ?? '')),
+                'department' => htmlspecialchars(trim($_POST['department'] ?? '')),
+                'course' => htmlspecialchars(trim($_POST['course'] ?? '')),
+                'section' => htmlspecialchars(trim($_POST['section'] ?? '')),
+                'time_from' => htmlspecialchars(trim($_POST['time_from'] ?? '')),
+                'time_to' => htmlspecialchars(trim($_POST['time_to'] ?? '')),
+                'building' => htmlspecialchars(trim($_POST['building'] ?? '')),
+                'month_from' => date('Y-m-d') // Current date for the update
+            ];
+            
+            $response = $this->updateSchedule($_POST['scheduleId'], $data);
+            
+            header('Content-Type: application/json');
+            echo json_encode($response);
+            exit();
+        } else {
+            // Handle regular schedule addition
+            $this->addSchedule();
+        }
+    }
+}
 }    
 
-
-
-// Handle requests
-$scheduleController = new ScheduleController();
-
+// Only handle POST requests here, GET requests are handled in the view files
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $scheduleController->addSchedule();
-} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $scheduleController->getSchedules();
+    $controller = new ScheduleController();
+    $controller->handleRequest();
 }
 ?>
