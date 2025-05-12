@@ -13,7 +13,7 @@ $message = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $faculty = $_POST['faculty_name'] ?? '';
+    $faculty = isset($_POST['faculty_name']) ? implode(', ', $_POST['faculty_name']) : '';
     $firstName = $_POST['first_name'] ?? '';
     $lastName = $_POST['last_name'] ?? '';
     $email = $_POST['email'] ?? '';
@@ -26,28 +26,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subjects = $_POST['subjects'] ?? [];
     $course = $_POST['course'] ?? '';
 
-    // Call register method with all required parameters
-    $result = $auth->register(
-        $firstName,
-        $lastName,
-        $email,
-        $student_id,
-        $contact,
-        $password,
-        'student',
-        $subjects,
-        $sections,
-        $prelim,
-        $semester,
-        $faculty,
-        $course
-    );
-
-    if ($result['success']) {
-        header("Location: register.php?message=Registration successful");
-        exit();
+    // Validate that at least one faculty is selected
+    if (empty($_POST['faculty_name'])) {
+        $message = "Please select at least one faculty";
     } else {
-        $message = $result['message'];
+        // Call register method with all required parameters
+        $result = $auth->register(
+            $firstName,
+            $lastName,
+            $email,
+            $student_id,
+            $contact,
+            $password,
+            'student',
+            $subjects,
+            $sections,
+            $prelim,
+            $semester,
+            $faculty,
+            $course
+        );
+
+        if ($result['success']) {
+            header("Location: register.php?message=Registration successful");
+            exit();
+        } else {
+            $message = $result['message'];
+        }
     }
 }
 
@@ -95,14 +100,23 @@ include './layout/sidebar.php';
         <p class="text-red-500 text-center"><?= $message ?></p>
     <?php endif; ?>
     <form action="" method="POST" class="space-y-4" enctype="multipart/form-data">
-    <select name="faculty_name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-    <option value="">Select Faculty</option>
-    <?php foreach ($faculties as $faculty): ?>
-        <option value="<?= htmlspecialchars($faculty['name']) ?>">
-            <?= htmlspecialchars($faculty['name']) ?>
-        </option>
-    <?php endforeach; ?>
-</select>
+        <div class="space-y-2">
+            <label class="block font-medium text-gray-700">Select Faculties (Multiple Selection)</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <?php foreach ($faculties as $faculty): ?>
+                    <div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
+                        <input type="checkbox" 
+                               name="faculty_name[]" 
+                               value="<?= htmlspecialchars($faculty['name']) ?>" 
+                               id="faculty_<?= $faculty['id'] ?>"
+                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="faculty_<?= $faculty['id'] ?>" class="text-sm text-gray-700">
+                            <?= htmlspecialchars($faculty['name']) ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
 
         <input type="text" name="first_name" placeholder="First Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
         <input type="text" name="last_name" placeholder="Last Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
@@ -127,7 +141,7 @@ include './layout/sidebar.php';
     </form>
 </div>
 
- /   <!-- Registered Students Table -->
+    <!-- Registered Students Table -->
     <div class="bg-white shadow-lg rounded-lg p-6 mt-8">
         <h2 class="text-lg font-semibold mb-3">Registered Students</h2>
         <table class="w-full border-collapse border">

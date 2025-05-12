@@ -169,8 +169,8 @@ include './layout/sidebar.php';
 
 <!-- View Student Modal -->
 <div id="viewModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4">
-        <div class="p-6 border-b border-gray-200">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b border-gray-200 flex-shrink-0">
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-bold text-gray-800">Student Details</h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
@@ -181,7 +181,7 @@ include './layout/sidebar.php';
             </div>
         </div>
 
-        <div class="p-6">
+        <div class="p-6 overflow-y-auto">
             <div class="flex flex-col md:flex-row gap-6">
                 <!-- Student Image and Basic Info -->
                 <div class="flex-shrink-0">
@@ -216,8 +216,23 @@ include './layout/sidebar.php';
                 </div>
             </div>
 
+            <!-- Statistics Section -->
+            <div class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Grade Statistics</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Top 3 Highest Grades</h4>
+                        <canvas id="highestGradesChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Top 3 Lowest Grades</h4>
+                        <canvas id="lowestGradesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Grades Section -->
-            <div class="mt-6">
+            <div class="mt-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Academic Performance</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full">
@@ -302,7 +317,91 @@ include './layout/sidebar.php';
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+let highestGradesChart = null;
+let lowestGradesChart = null;
+
+function calculateAverageGrade(grade) {
+    const prelim = parseFloat(grade.prelim) || 0;
+    const midterm = parseFloat(grade.midterm) || 0;
+    const final = parseFloat(grade.final) || 0;
+    const exam = parseFloat(grade.exam) || 0;
+    
+    // Calculate average if at least one grade exists
+    const grades = [prelim, midterm, final, exam].filter(g => g > 0);
+    return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : 0;
+}
+
+function updateGradeCharts(grades) {
+    // Calculate average grades for each subject
+    const gradeData = grades.map(grade => ({
+        subject: grade.subject,
+        average: calculateAverageGrade(grade)
+    }));
+
+    // Sort grades by average
+    gradeData.sort((a, b) => b.average - a.average);
+
+    // Get top 3 highest and lowest
+    const highestGrades = gradeData.slice(0, 3);
+    const lowestGrades = gradeData.slice(-3).reverse();
+
+    // Destroy existing charts if they exist
+    if (highestGradesChart) highestGradesChart.destroy();
+    if (lowestGradesChart) lowestGradesChart.destroy();
+
+    // Create highest grades chart
+    const highestCtx = document.getElementById('highestGradesChart').getContext('2d');
+    highestGradesChart = new Chart(highestCtx, {
+        type: 'bar',
+        data: {
+            labels: highestGrades.map(g => g.subject),
+            datasets: [{
+                label: 'Average Grade',
+                data: highestGrades.map(g => g.average),
+                backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                borderColor: 'rgb(34, 197, 94)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Create lowest grades chart
+    const lowestCtx = document.getElementById('lowestGradesChart').getContext('2d');
+    lowestGradesChart = new Chart(lowestCtx, {
+        type: 'bar',
+        data: {
+            labels: lowestGrades.map(g => g.subject),
+            datasets: [{
+                label: 'Average Grade',
+                data: lowestGrades.map(g => g.average),
+                backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                borderColor: 'rgb(239, 68, 68)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
 function openModal(student) {
     document.getElementById('modalImage').src = `/uploads/${student.image}`;
     document.getElementById('modalFirstName').textContent = student.first_name;
@@ -316,6 +415,9 @@ function openModal(student) {
     gradesBody.innerHTML = '';
 
     if (student.grades && student.grades.length > 0) {
+        // Update grade charts
+        updateGradeCharts(student.grades);
+
         student.grades.forEach(grade => {
             const row = `<tr>
                 <td class="border px-4 py-2">${grade.subject}</td>

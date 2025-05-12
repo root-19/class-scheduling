@@ -13,7 +13,7 @@
   <div id="sidebar" class="w-64 bg-blue-800 text-white min-h-screen p-4 fixed md:relative transform -translate-x-full md:translate-x-0 transition duration-300 ease-in-out">
     <!-- Logo & Title -->
     <div class="flex items-center space-x-3 mb-8">
-      <img src="logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+      <!-- <img src="../../../Resources/image/logo/scheduling-logo.png" alt="Logo" class="w-10 h-10 rounded-full"> -->
       <h1 class="text-2xl font-bold">Scheduling</h1>
     </div>
 

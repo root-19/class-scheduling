@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../Controllers/ScheduleController.php';
+require_once __DIR__ . '/../../Config/Database.php';
 use App\Controllers\ScheduleController;
 session_start();
 $scheduleController = new ScheduleController();
@@ -9,6 +10,45 @@ $schedules = $scheduleController->getSchedules($departmentFilter);
 $departments = $scheduleController->getDepartments();
 $isFiltering = !empty($departmentFilter);
 
+// Filter schedules based on student's section and course
+$filteredSchedules = array_filter($schedules, function($schedule) {
+    return $schedule['extendedProps']['section'] === $_SESSION['sections'] && 
+           $schedule['extendedProps']['course'] === $_SESSION['course'];
+});
+$schedules = $filteredSchedules;
+
+// ✅ Initialize DB connection
+$db = (new \App\Config\Database())->connect();
+
+// Fetch student grades
+$stmt = $db->prepare("SELECT * FROM grades WHERE student_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$grades = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate statistics
+$gradeStats = [];
+foreach ($grades as $grade) {
+    $prelim = floatval($grade['prelim'] ?? 0);
+    $midterm = floatval($grade['midterm'] ?? 0);
+    $final = floatval($grade['final'] ?? 0);
+    $exam = floatval($grade['exam'] ?? 0);
+    
+    $gradesArray = array_filter([$prelim, $midterm, $final, $exam], function($g) { return $g > 0; });
+    $average = !empty($gradesArray) ? array_sum($gradesArray) / count($gradesArray) : 0;
+    
+    $gradeStats[] = [
+        'subject' => $grade['subject'],
+        'average' => $average
+    ];
+}
+
+// Sort grades by average
+usort($gradeStats, function($a, $b) {
+    return $b['average'] - $a['average'];
+});
+
+$topGrades = array_slice($gradeStats, 0, 3);
+$lowestGrades = array_slice($gradeStats, -3);
 ?>
 
 <!DOCTYPE html>
@@ -16,10 +56,11 @@ $isFiltering = !empty($departmentFilter);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Calendar</title>
+    <title>Student Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .modal { 
             display: none; 
@@ -45,30 +86,92 @@ $isFiltering = !empty($departmentFilter);
 <body class="bg-gray-100">
 
 <div class="p-4 sm:p-6 w-full">
-    <div class="max-w-6xl mx-auto bg-white shadow-lg p-4 sm:p-6 rounded-lg">
-        <div class="mb-6 p-4 bg-white shadow-md rounded-xl border border-gray-200">
-        <?php if ($_SESSION['role'] === 'student') { ?>
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M5.121 17.804A13.937 13.937 0 0112 15c2.485 0 4.79.664 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path d="M19.428 15.341A8 8 0 106.57 15.34M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                Student Profile
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
-                <p><strong class="font-medium text-gray-900">Name:</strong> <?= htmlspecialchars($_SESSION['first_name'] ?? 'N/A') ?> <?= htmlspecialchars($_SESSION['last_name'] ?? 'N/A') ?></p>
-                <p><strong class="font-medium text-gray-900">Course:</strong> <?= htmlspecialchars($_SESSION['course'] ?? 'N/A') ?></p>
-                <p><strong class="font-medium text-gray-900">Section:</strong> <?= htmlspecialchars($_SESSION['sections'] ?? 'N/A') ?></p>
-            </div>
-        <?php } ?>
-    </div>
+    <div class="max-w-6xl mx-auto">
+        <!-- Profile Section -->
+        <div class="mb-6 bg-white shadow-md rounded-xl border border-gray-200 p-4">
+            <?php if ($_SESSION['role'] === 'student') { ?>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5.121 17.804A13.937 13.937 0 0112 15c2.485 0 4.79.664 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path d="M19.428 15.341A8 8 0 106.57 15.34M15 10a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Student Profile
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+                    <p><strong class="font-medium text-gray-900">Name:</strong> <?= htmlspecialchars($_SESSION['first_name'] ?? 'N/A') ?> <?= htmlspecialchars($_SESSION['last_name'] ?? 'N/A') ?></p>
+                    <p><strong class="font-medium text-gray-900">Course:</strong> <?= htmlspecialchars($_SESSION['course'] ?? 'N/A') ?></p>
+                    <p><strong class="font-medium text-gray-900">Section:</strong> <?= htmlspecialchars($_SESSION['sections'] ?? 'N/A') ?></p>
+                </div>
+            <?php } ?>
+        </div>
 
-        <h2 class="text-lg font-bold mb-4">Schedule Calendar</h2>
-        <div id="calendar" class="w-full"></div>
+        <!-- Grades Section -->
+        <div class="mb-6 bg-white shadow-md rounded-xl border border-gray-200 p-4">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+                Academic Performance
+            </h2>
+
+            <!-- Grade Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h4 class="text-md font-medium text-gray-700 mb-3">Top 3 Highest Grades</h4>
+                    <canvas id="highestGradesChart"></canvas>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h4 class="text-md font-medium text-gray-700 mb-3">Top 3 Lowest Grades</h4>
+                    <canvas id="lowestGradesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Grades Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prelim</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Midterm</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($grades as $grade): 
+                            $prelim = floatval($grade['prelim'] ?? 0);
+                            $midterm = floatval($grade['midterm'] ?? 0);
+                            $final = floatval($grade['final'] ?? 0);
+                            $exam = floatval($grade['exam'] ?? 0);
+                            
+                            $gradesArray = array_filter([$prelim, $midterm, $final, $exam], function($g) { return $g > 0; });
+                            $average = !empty($gradesArray) ? array_sum($gradesArray) / count($gradesArray) : 0;
+                        ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-2"><?= htmlspecialchars($grade['subject']) ?></td>
+                                <td class="px-4 py-2"><?= $prelim > 0 ? number_format($prelim, 2) : '-' ?></td>
+                                <td class="px-4 py-2"><?= $midterm > 0 ? number_format($midterm, 2) : '-' ?></td>
+                                <td class="px-4 py-2"><?= $final > 0 ? number_format($final, 2) : '-' ?></td>
+                                <td class="px-4 py-2"><?= $exam > 0 ? number_format($exam, 2) : '-' ?></td>
+                                <td class="px-4 py-2 font-medium"><?= number_format($average, 2) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Schedule Section -->
+        <div class="bg-white shadow-lg p-4 sm:p-6 rounded-lg">
+            <h2 class="text-lg font-bold mb-4">Schedule Calendar</h2>
+            <div id="calendar" class="w-full"></div>
+        </div>
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Schedule Modal -->
 <div id="scheduleModal" class="modal fixed inset-0 flex items-center justify-center">
     <div class="modal-overlay" onclick="closeModal()"></div>
     <div class="bg-white p-4 sm:p-6 rounded-lg shadow-xl w-11/12 sm:w-1/3 z-50 relative">
@@ -143,6 +246,59 @@ $isFiltering = !empty($departmentFilter);
         url.searchParams.set('department', selectedDept);
         window.location.href = url.toString();
     }
+
+    // Initialize grade charts
+    document.addEventListener("DOMContentLoaded", function() {
+        // Highest Grades Chart
+        const highestCtx = document.getElementById('highestGradesChart').getContext('2d');
+        new Chart(highestCtx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode(array_column($topGrades, 'subject')) ?>,
+                datasets: [{
+                    label: 'Average Grade',
+                    data: <?= json_encode(array_column($topGrades, 'average')) ?>,
+                    backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                    borderColor: 'rgb(34, 197, 94)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // Lowest Grades Chart
+        const lowestCtx = document.getElementById('lowestGradesChart').getContext('2d');
+        new Chart(lowestCtx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode(array_column($lowestGrades, 'subject')) ?>,
+                datasets: [{
+                    label: 'Average Grade',
+                    data: <?= json_encode(array_column($lowestGrades, 'average')) ?>,
+                    backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                    borderColor: 'rgb(239, 68, 68)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    });
 </script>
 
 </body>

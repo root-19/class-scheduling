@@ -12,7 +12,7 @@
     
     <!-- Logo & Title -->
     <div class="flex items-center space-x-2 mb-6">
-      <img src="logo.png" alt="Logo" class="w-10" />
+      <!-- <img src="logo.png" alt="Logo" class="w-10" /> -->
       <h1 class="text-xl font-bold">Scheduling</h1>
     </div>
 

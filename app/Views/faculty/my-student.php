@@ -9,12 +9,25 @@ $conn = $db->connect();
 if (!isset($_SESSION['faculty_name'])) {
     // header("Location: login.php");
 }
-
 $loggedInFacultyName = $_SESSION['faculty_name'];
-// Fetch users under the logged-in faculty
-$stmt = $conn->prepare("SELECT * FROM users WHERE faculty = ?");
-$stmt->execute([$loggedInFacultyName]);
+
+// Fetch users where the logged-in faculty name appears in the faculty field
+$stmt = $conn->prepare("SELECT * FROM users WHERE role = 'student' AND (faculty = ? OR faculty LIKE ? OR faculty LIKE ? OR faculty LIKE ?)");
+$stmt->execute([
+    $loggedInFacultyName,
+    $loggedInFacultyName . ', %',
+    '%, ' . $loggedInFacultyName . ', %',
+    '%, ' . $loggedInFacultyName
+]);
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch grades for each student
+foreach ($students as &$student) {
+    $gradeStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ?");
+    $gradeStmt->execute([$student['id']]);
+    $student['grades'] = $gradeStmt->fetchAll(PDO::FETCH_ASSOC);
+}
+unset($student);
 
 include './layout/sidebar.php';
 ?>

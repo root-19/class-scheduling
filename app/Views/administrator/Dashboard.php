@@ -31,12 +31,31 @@ $totalSubjects = $subjectController->getTotalSubjects();
 $totalCourses = $courseController->getTotalCourses();
 $totalSchedules = $scheduleController->getTotalSchedules();
 
+$admin = $_SESSION['first_name'] ?? null;
+if (!$admin) {
+    header('location /login.php');
+    exit();
+}
+
 include './layout/sidebar.php';
 ?>
 
 <div class="p-8 w-full bg-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold mb-8 text-gray-800">Dashboard</h1>
+
+                <!-- Welcome Section -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="text-white">
+                    <h1 class="text-3xl font-bold mb-2">Welcome back, <?php echo htmlspecialchars($admin); ?>!</h1>
+                    <p class="text-blue-100">Here's what's happening with your classes today</p>
+                </div>
+                <div class="hidden md:block">
+                    <!-- <img src="/assets/images/teacher-illustration.svg" alt="Teacher" class="h-32 w-32"> -->
+                </div>
+            </div>
+        </div>
 
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">

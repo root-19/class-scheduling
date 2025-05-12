@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../Models/Notification.php';
 
 use App\Controllers\SubjectController;
 use App\Models\Notification;
+use App\Config\Database;
 
 if (!isset($_SESSION['faculty_name'])) {
     header('Location: /login.php');
@@ -29,8 +30,13 @@ $unreadCount = $notificationModel->getUnreadCount($facultyName);
 // Get today's schedule
 $todaySchedule = $subjectController->getTodaySchedule($facultyId);
 
-// Get total students
-$totalStudents = $subjectController->getTotalStudents($facultyId);
+// Get total students from my-student list
+$db = new Database();
+$conn = $db->connect();
+$stmt = $conn->prepare("SELECT COUNT(DISTINCT id) as total FROM users WHERE faculty = ?");
+$stmt->execute([$facultyName]);
+$result = $stmt->fetch(PDO::FETCH_ASSOC);
+$totalStudents = $result['total'];
 
 include './layout/sidebar.php';
 ?>
@@ -45,7 +51,7 @@ include './layout/sidebar.php';
                     <p class="text-blue-100">Here's what's happening with your classes today</p>
                 </div>
                 <div class="hidden md:block">
-                    <img src="/assets/images/teacher-illustration.svg" alt="Teacher" class="h-32 w-32">
+                    <!-- <img src="/assets/images/teacher-illustration.svg" alt="Teacher" class="h-32 w-32"> -->
                 </div>
             </div>
         </div>

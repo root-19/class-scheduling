@@ -30,45 +30,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentId = $_POST['student_id'] ?? $id;
 
     if ($action === 'add') {
-        $subjectName = trim($_POST['new_subject'] ?? '');
+        $subject = trim($_POST['subject'] ?? '');
         $grades = $_POST['new_grades'] ?? [];
 
-        if (!$subjectName || empty($grades)) {
-            echo "Incomplete data.";
-            exit();
-        }
-
-        // Check if subject already exists
-        $checkStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ? AND LOWER(subject) = LOWER(?)");
-        $checkStmt->execute([$studentId, $subjectName]);
-
-        if ($checkStmt->rowCount() > 0) {
-            echo "<script>alert('This subject already has grades recorded.');</script>";
+        if (!$subject || empty($grades)) {
+            echo "<script>alert('Please fill in all grade fields.');</script>";
         } else {
-            $stmt = $conn->prepare("
-                INSERT INTO grades (student_id, subject, prelim, midterm, final)
-                VALUES (?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([
-                $studentId,
-                $subjectName,
-                $grades['prelim'],
-                $grades['midterm'],
-                $grades['final']
-            ]);
-        }
+            // Check if subject already exists for this student
+            $checkStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ? AND subject = ?");
+            $checkStmt->execute([$studentId, $subject]);
 
+            if ($checkStmt->rowCount() > 0) {
+                echo "<script>alert('Grades for this subject already exist.');</script>";
+            } else {
+                $stmt = $conn->prepare("
+                    INSERT INTO grades (student_id, subject, prelim, midterm, final)
+                    VALUES (?, ?, ?, ?, ?)
+                ");
+                try {
+                    $stmt->execute([
+                        $studentId,
+                        $subject,
+                        $grades['prelim'],
+                        $grades['midterm'],
+                        $grades['final']
+                    ]);
+                    echo "<script>alert('Grades added successfully!');</script>";
+                } catch (PDOException $e) {
+                    echo "<script>alert('Error saving grades. Please try again.');</script>";
+                }
+            }
+        }
     } elseif ($action === 'edit') {
         $gradeId = $_POST['grade_id'];
-        $stmt = $conn->prepare("UPDATE grades SET prelim = ?, midterm = ?, final = ? WHERE id = ? AND student_id = ?");
-        $stmt->execute([
-            $_POST['prelim'],
-            $_POST['midterm'],
-            $_POST['final'],
-            $gradeId,
-            $studentId
-        ]);
-
+        $subject = trim($_POST['subject'] ?? '');
+        
+        try {
+            $stmt = $conn->prepare("UPDATE grades SET prelim = ?, midterm = ?, final = ? WHERE id = ? AND student_id = ?");
+            $stmt->execute([
+                $_POST['prelim'],
+                $_POST['midterm'],
+                $_POST['final'],
+                $gradeId,
+                $studentId
+            ]);
+            echo "<script>alert('Grades updated successfully!');</script>";
+        } catch (PDOException $e) {
+            echo "<script>alert('Error updating grades. Please try again.');</script>";
+        }
     } elseif ($action === 'delete') {
         $gradeId = $_POST['grade_id'];
         $stmt = $conn->prepare("DELETE FROM grades WHERE id = ? AND student_id = ?");
@@ -98,80 +107,71 @@ include './layout/sidebar.php';
         <p><strong>Student ID:</strong> <?= htmlspecialchars($student['student_id']) ?></p>
         <p><strong>Contact:</strong> <?= htmlspecialchars($student['contact']) ?></p>
         <p><strong>Faculty:</strong> <?= htmlspecialchars($student['faculty']) ?></p>
-        <!-- <p><strong>Subjects:</strong> <?= htmlspecialchars($student['subjects']) ?></p> -->
         <p><strong>Sections:</strong> <?= htmlspecialchars($student['sections']) ?></p>
-        <!-- <p><strong>Semester:</strong> <?= htmlspecialchars($student['semester']) ?></p> -->
         <a href="my-student.php" class="text-blue-500 mt-4 inline-block">← Back to List</a>
     </div>
 
-    <!-- Add New Subject -->
-    <h2 class="text-xl font-semibold mb-4">Add New Subject with Grades</h2>
+    <!-- Student's Subjects & Grades -->
+    <h2 class="text-xl font-semibold mb-4">Student's Subjects & Grades</h2>
 
-    <form method="POST" class="mb-6">
-        <input type="hidden" name="student_id" value="<?= $id ?>">
-        <input type="hidden" name="action" value="add">
+    <?php
+    // Get student's assigned subjects
+    $subjectsStmt = $conn->prepare("SELECT subjects FROM users WHERE id = ?");
+    $subjectsStmt->execute([$id]);
+    $studentSubjects = $subjectsStmt->fetch(PDO::FETCH_ASSOC);
+    $subjects = explode(',', $studentSubjects['subjects']);
+    ?>
 
-        <div class="mb-4 p-4 border rounded shadow">
-            <div class="mb-2">
-                <label class="block font-semibold">Subject Name</label>
-                <input type="text" name="new_subject" placeholder="e.g. Math 101" required class="w-full border px-2 py-1 rounded">
-            </div>
-
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <label class="block">Prelim</label>
-                    <input type="number" step="0.01" min="0" max="100" name="new_grades[prelim]" required class="w-full border px-2 py-1 rounded">
-                </div>
-                <div>
-                    <label class="block">Midterm</label>
-                    <input type="number" step="0.01" min="0" max="100" name="new_grades[midterm]" required class="w-full border px-2 py-1 rounded">
-                </div>
-                <div>
-                    <label class="block">Final</label>
-                    <input type="number" step="0.01" min="0" max="100" name="new_grades[final]" required class="w-full border px-2 py-1 rounded">
-                </div>
-            </div>
-        </div>
-
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-            Add Subject & Save Grades
-        </button>
-    </form>
-
-    <!-- Existing Grades -->
-    <h2 class="text-xl font-semibold mb-4">Existing Subjects & Grades</h2>
-
-    <?php if (!empty($gradesData)): ?>
-        <?php foreach ($gradesData as $grade): ?>
+    <?php if (!empty($subjects) && $subjects[0] !== ''): ?>
+        <?php foreach ($subjects as $subject): ?>
+            <?php
+            // Check if grades exist for this subject
+            $gradeStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ? AND subject = ?");
+            $gradeStmt->execute([$id, trim($subject)]);
+            $grade = $gradeStmt->fetch(PDO::FETCH_ASSOC);
+            ?>
+            
             <form method="POST" class="mb-4 p-4 border rounded shadow">
-                <input type="hidden" name="grade_id" value="<?= $grade['id'] ?>">
                 <input type="hidden" name="student_id" value="<?= $id ?>">
+                <input type="hidden" name="action" value="<?= $grade ? 'edit' : 'add' ?>">
+                <input type="hidden" name="subject" value="<?= htmlspecialchars(trim($subject)) ?>">
+                <?php if ($grade): ?>
+                    <input type="hidden" name="grade_id" value="<?= $grade['id'] ?>">
+                <?php endif; ?>
 
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-bold"><?= htmlspecialchars($grade['subject']) ?></h3>
-                    <!-- <div class="space-x-2">
-                        <button type="submit" name="action" value="edit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Update</button>
-                        <button type="submit" name="action" value="delete" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" onclick="return confirm('Are you sure you want to delete this subject?')">Delete</button>
-                    </div> -->
+                    <h3 class="text-lg font-bold"><?= htmlspecialchars(trim($subject)) ?></h3>
                 </div>
 
                 <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block">Prelim</label>
-                        <input type="number" step="0.01" name="prelim" min="0" max="100" value="<?= $grade['prelim'] ?>" class="w-full border px-2 py-1 rounded" required>
+                        <input type="number" step="0.01" name="<?= $grade ? 'prelim' : 'new_grades[prelim]' ?>" 
+                               min="0" max="100" value="<?= $grade ? $grade['prelim'] : '' ?>" 
+                               class="w-full border px-2 py-1 rounded" required>
                     </div>
                     <div>
                         <label class="block">Midterm</label>
-                        <input type="number" step="0.01" name="midterm" min="0" max="100" value="<?= $grade['midterm'] ?>" class="w-full border px-2 py-1 rounded" required>
+                        <input type="number" step="0.01" name="<?= $grade ? 'midterm' : 'new_grades[midterm]' ?>" 
+                               min="0" max="100" value="<?= $grade ? $grade['midterm'] : '' ?>" 
+                               class="w-full border px-2 py-1 rounded" required>
                     </div>
                     <div>
                         <label class="block">Final</label>
-                        <input type="number" step="0.01" name="final" min="0" max="100" value="<?= $grade['final'] ?>" class="w-full border px-2 py-1 rounded" required>
+                        <input type="number" step="0.01" name="<?= $grade ? 'final' : 'new_grades[final]' ?>" 
+                               min="0" max="100" value="<?= $grade ? $grade['final'] : '' ?>" 
+                               class="w-full border px-2 py-1 rounded" required>
                     </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        <?= $grade ? 'Update Grades' : 'Add Grades' ?>
+                    </button>
                 </div>
             </form>
         <?php endforeach; ?>
     <?php else: ?>
-        <p>No grades available yet.</p>
+        <p>No subjects assigned to this student yet.</p>
     <?php endif; ?>
 </div>

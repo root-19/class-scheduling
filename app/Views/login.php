@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
         <div class="text-center">
-            <img src="logo.png" alt="Logo" class="w-16 mx-auto mb-2">
+            <img src="../Resources/image/logo/scheduling-logo.png" alt="Logo" class="w-16 mx-auto mb-2">
             <h1 class="text-2xl font-semibold">Login</h1>
             <p class="text-gray-500 text-sm scheduling">Scheduling</p>
         </div>

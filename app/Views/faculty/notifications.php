@@ -40,64 +40,50 @@ include './layout/sidebar.php';
 
         <!-- Notifications List -->
         <div class="space-y-4">
-            <!-- Unread Notification -->
-            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 hover:shadow-md transition-shadow">
-                <div class="flex items-start gap-4">
-                    <div class="h-3 w-3 mt-2">
-                        <div class="h-3 w-3 bg-blue-600 rounded-full"></div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-semibold text-gray-800">New Schedule Update</h3>
-                            <span class="text-sm text-gray-500">2 hours ago</span>
-                        </div>
-                        <p class="text-gray-600 mt-1">Your class schedule for CS101 has been updated for next week.</p>
-                        <div class="mt-2">
-                            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Mark as read</button>
-                        </div>
-                    </div>
+            <?php if (empty($notifications)): ?>
+                <div class="text-center py-8">
+                    <p class="text-gray-600">No notifications found</p>
                 </div>
-            </div>
-
-            <!-- Read Notification -->
-            <div class="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
-                <div class="flex items-start gap-4">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-semibold text-gray-800">Student Request</h3>
-                            <span class="text-sm text-gray-500">1 day ago</span>
-                        </div>
-                        <p class="text-gray-600 mt-1">A student has requested a consultation meeting.</p>
-                        <div class="mt-2">
-                            <button class="text-gray-600 hover:text-gray-800 text-sm font-medium">Remove</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- System Notification -->
-            <div class="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
-                <div class="flex items-start gap-4">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-semibold text-gray-800">System Maintenance</h3>
-                            <span class="text-sm text-gray-500">2 days ago</span>
-                        </div>
-                        <p class="text-gray-600 mt-1">The system will undergo maintenance this weekend. Please save all your work.</p>
-                        <div class="mt-2">
-                            <button class="text-gray-600 hover:text-gray-800 text-sm font-medium">Remove</button>
+            <?php else: ?>
+                <?php foreach ($notifications as $notification): ?>
+                    <div class="<?php echo $notification['is_read'] ? 'bg-white' : 'bg-blue-50'; ?> p-4 rounded-lg border <?php echo $notification['is_read'] ? 'border-gray-200' : 'border-blue-100'; ?> hover:shadow-md transition-shadow">
+                        <div class="flex items-start gap-4">
+                            <?php if (!$notification['is_read']): ?>
+                                <div class="h-3 w-3 mt-2">
+                                    <div class="h-3 w-3 bg-blue-600 rounded-full"></div>
+                                </div>
+                            <?php endif; ?>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($notification['title']); ?></h3>
+                                    <span class="text-sm text-gray-500"><?php echo htmlspecialchars($notification['created_at']); ?></span>
+                                </div>
+                                <p class="text-gray-600 mt-1"><?php echo htmlspecialchars($notification['message']); ?></p>
+                                <div class="mt-2">
+                                    <?php if (!$notification['is_read']): ?>
+                                        <form method="POST" class="inline">
+                                            <input type="hidden" name="notification_id" value="<?php echo $notification['id']; ?>">
+                                            <button type="submit" name="mark_read" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Mark as read</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <button class="text-gray-600 hover:text-gray-800 text-sm font-medium">Remove</button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
 
         <!-- Load More Button -->
-        <div class="mt-6 text-center">
-            <button class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                Load More
-            </button>
-        </div>
+        <?php if (count($notifications) >= 10): ?>
+            <div class="mt-6 text-center">
+                <button class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                    Load More
+                </button>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
