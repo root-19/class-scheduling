@@ -59,7 +59,7 @@ include './layout/sidebar.php';
         <!-- Quick Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <!-- Total Classes -->
-            <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <!-- <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-blue-100 rounded-full">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +71,7 @@ include './layout/sidebar.php';
                         <p class="text-2xl font-bold text-gray-800"><?php echo count($subjects); ?></p>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Students -->
             <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">

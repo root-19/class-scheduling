@@ -55,18 +55,21 @@ include "./layout/sidebar.php";
     <!-- Calendar-based Month To Input -->
     <input type="month" name="month_to" required class="w-full p-2 border rounded">
 
-  <!-- Building Dropdown -->
+<!-- Building Dropdown -->
 <select id="building" name="building" required class="w-full p-2 border rounded">
-    <option value="" disabled selected>Select Building</option>
-    <option value="Building 1">Building 1</option>
-    <option value="Building 2">Building 2</option>
-    <option value="Building 3">Building 3</option>
+  <option value="" disabled selected>Select Building</option>
+  <option value="Building A">Building A</option>
+  <option value="Building B">Building B</option>
+  <option value="Building C">Building C</option>
+  <option value="Building D">Building D</option>
+  <option value="Forest Room">Forest Room</option>
 </select>
 
 <!-- Room Dropdown (Hidden by default) -->
 <select id="room" name="room" required class="w-full p-2 border rounded mt-2 hidden">
-    <option value="" disabled selected>Select Room</option>
+  <option value="" disabled selected>Select Room</option>
 </select>
+
     <input type="text" name="department" placeholder="Department" required class="w-full p-2 border rounded">
     <label for="time_from">Time From:</label>
 <select name="time_from" required class="w-full p-2 border rounded">
@@ -120,33 +123,50 @@ include "./layout/sidebar.php";
             .catch(error => console.error("Error:", error));
         });
     </script>
-    <script>
-   const buildingSelect = document.getElementById("building");
+   
+<script>
+  const buildingSelect = document.getElementById("building");
   const roomSelect = document.getElementById("room");
 
-  // Room ranges for each building
+  // Room list for each building
   const roomMap = {
-    "Building 1": [1, 5],
-    "Building 2": [6, 9],
-    "Building 3": [10, 14]
+    "Building A": [
+      "A101", "A102", "A103",
+      "Computer laboratory", "Engineering Lab", "Mock lab"
+    ],
+    "Building B": [
+      "B102", "B103", "B104", "B105", "B106", "B107"
+    ],
+    "Building C": [
+      "C-A", "C-B", "C-C", "C-D", "C-E", "C-F", "C-H", "C-I", "C-J", "C-K",
+      "C-L", "C-M", "C-N", "C-O", "C-P", "C-Q", "C-R", "C-S", "C-T"
+    ],
+    "Building D": [
+      "D101", "D102", "D103", "D104", "D108",
+      "D201", "D202", "D203", "D204", "D205", "D206", "D207", "D208",
+      "D301", "D302", "D303", "D304", "D305", "D306", "D307", "D308"
+    ],
+    "Forest Room": [
+      "FR 1", "FR 2", "FR 3", "FR 4", "FR 5"
+    ]
   };
 
   buildingSelect.addEventListener("change", function () {
     const selectedBuilding = this.value;
-    const [start, end] = roomMap[selectedBuilding] || [];
+    const rooms = roomMap[selectedBuilding] || [];
 
-    // Clear and reset room dropdown
+    // Reset room dropdown
     roomSelect.innerHTML = '<option value="" disabled selected>Select Room</option>';
 
-    // Populate the appropriate room numbers
-    for (let i = start; i <= end; i++) {
+    // Populate rooms
+    rooms.forEach(room => {
       const option = document.createElement("option");
-      option.value = `Room ${i}`;
-      option.textContent = `Room ${i}`;
+      option.value = room;
+      option.textContent = room;
       roomSelect.appendChild(option);
-    }
+    });
 
-    // Show the room dropdown
+    // Show room dropdown
     roomSelect.classList.remove("hidden");
   });
 </script>
