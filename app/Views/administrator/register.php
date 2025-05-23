@@ -164,10 +164,24 @@ include './layout/sidebar.php';
         <input type="file" name="image" accept="image/*" class="w-full px-4 py-2 border rounded-lg focus:ring">
         
         <div id="subjects-container">
-            <label for="subjects" class="block font-medium">Subjects</label>
-            <div class="flex space-x-4">
-                <input type="text" name="subjects[]" placeholder="Subject" class="w-full px-4 py-2 border rounded-lg focus:ring">
-            <button type="button" id="add-subject" class="text-blue-500 mt-2">Add Another Subject</button>
+            <label class="block font-medium text-gray-700">Select Subjects (Multiple Selection)</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <?php
+                $subjectStmt = $conn->query("SELECT * FROM subjects");
+                while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                    echo '<div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
+                        <input type="checkbox" 
+                               name="subjects[]" 
+                               value="' . htmlspecialchars($subject['subject_name']) . '" 
+                               id="subject_' . $subject['id'] . '"
+                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="subject_' . $subject['id'] . '" class="text-sm text-gray-700">
+                            ' . htmlspecialchars($subject['subject_name']) . '
+                        </label>
+                    </div>';
+                }
+                ?>
+            </div>
         </div>
 
         <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Register Student</button>
@@ -294,16 +308,4 @@ function openModal(student) {
 function closeModal() {
     document.getElementById('viewModal').classList.add('hidden');
 }
-</script>
-
-<script>
-    document.getElementById('add-subject').addEventListener('click', function () {
-        const container = document.getElementById('subjects-container');
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.name = 'subjects[]';
-        input.placeholder = 'Subject';
-        input.className = 'w-full px-4 py-2 border rounded-lg focus:ring mt-2';
-        container.appendChild(input);
-    });
 </script>

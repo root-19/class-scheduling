@@ -15,8 +15,8 @@ class FacultyController {
         return $this->facultyModel->getAllFaculty();
     }
 
-    public function addFaculty($facultyId, $name, $email, $contact, $address, $password) {
-        return $this->facultyModel->addFaculty($facultyId, $name, $email, $contact, $address, $password);
+    public function addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password) {
+        return $this->facultyModel->addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password);
     }
     
 
@@ -24,8 +24,8 @@ class FacultyController {
         return $this->facultyModel->getFacultyById($id);
     }
 
-    public function updateFaculty($id, $facultyId, $name, $email, $contact,$address) {
-        return $this->facultyModel->updateFaculty($id, $facultyId, $name, $email, $contact,$address);
+    public function updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects) {
+        return $this->facultyModel->updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects);
     }
 
     public function deleteFaculty($id) {
@@ -34,6 +34,10 @@ class FacultyController {
 
     public function getTotalFaculty() {
         return $this->facultyModel->getTotalFaculty();
+    }
+
+    public function getFacultySubjects($facultyId) {
+        return $this->facultyModel->getFacultySubjects($facultyId);
     }
 }
 

@@ -26,19 +26,53 @@ class Faculty {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-// Add faculty with password hashing
-public function addFaculty($facultyId, $name, $email, $contact, $address, $password) {
-    $hashedPassword = password_hash($password, PASSWORD_BCRYPT); // Hash password
-
-    $stmt = $this->conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, password) VALUES (?, ?, ?, ?, ?, ?)");
-    return $stmt->execute([$facultyId, $name, $email, $contact, $address, $hashedPassword]); // Store hashed password
-}
-
+    // Add faculty with password hashing
+    public function addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password) {
+        try {
+            // Get subject names from IDs
+            $subjectNames = [];
+            if (!empty($subjects)) {
+                $placeholders = str_repeat('?,', count($subjects) - 1) . '?';
+                $stmt = $this->conn->prepare("SELECT subject_name FROM subjects WHERE id IN ($placeholders)");
+                $stmt->execute($subjects);
+                $subjectNames = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            }
+            
+            // Convert subjects array to comma-separated string
+            $subjectsString = !empty($subjectNames) ? implode(',', $subjectNames) : '';
+            
+            // Insert faculty member with subjects
+            $stmt = $this->conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, subjects, password) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+            return $stmt->execute([$facultyId, $name, $email, $contact, $address, $subjectsString, $hashedPassword]);
+        } catch (\PDOException $e) {
+            error_log("Error adding faculty: " . $e->getMessage());
+            return false;
+        }
+    }
 
     // Update faculty
-    public function updateFaculty($id, $facultyId, $name, $email, $contact,$address) {
-        $stmt = $this->conn->prepare("UPDATE faculty SET faculty_id = ?, name = ?, email = ?, contact = ?, address = ? WHERE id = ?");
-        return $stmt->execute([$facultyId, $name, $email, $contact,$address, $id]);
+    public function updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects) {
+        try {
+            // Get subject names from IDs
+            $subjectNames = [];
+            if (!empty($subjects)) {
+                $placeholders = str_repeat('?,', count($subjects) - 1) . '?';
+                $stmt = $this->conn->prepare("SELECT subject_name FROM subjects WHERE id IN ($placeholders)");
+                $stmt->execute($subjects);
+                $subjectNames = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            }
+            
+            // Convert subjects array to comma-separated string
+            $subjectsString = !empty($subjectNames) ? implode(',', $subjectNames) : '';
+            
+            // Update faculty member with subjects
+            $stmt = $this->conn->prepare("UPDATE faculty SET faculty_id = ?, name = ?, email = ?, contact = ?, address = ?, subjects = ? WHERE id = ?");
+            return $stmt->execute([$facultyId, $name, $email, $contact, $address, $subjectsString, $id]);
+        } catch (\PDOException $e) {
+            error_log("Error updating faculty: " . $e->getMessage());
+            return false;
+        }
     }
 
     // Delete faculty
@@ -54,6 +88,21 @@ public function addFaculty($facultyId, $name, $email, $contact, $address, $passw
         $stmt->execute();
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         return $result['total'] ?? 0;
+    }
+
+    public function getFacultySubjects($facultyId) {
+        $stmt = $this->conn->prepare("SELECT subjects FROM faculty WHERE id = ?");
+        $stmt->execute([$facultyId]);
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        
+        if ($result && !empty($result['subjects'])) {
+            $subjectNames = explode(',', $result['subjects']);
+            $placeholders = str_repeat('?,', count($subjectNames) - 1) . '?';
+            $stmt = $this->conn->prepare("SELECT * FROM subjects WHERE subject_name IN ($placeholders)");
+            $stmt->execute($subjectNames);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+        return [];
     }
 }
 ?>

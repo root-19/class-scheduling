@@ -31,10 +31,10 @@ class Notification {
     }
 
     public function createNotification($faculty, $message, $type = 'schedule_update') {
-        $query = "INSERT INTO notifications (faculty, message, type) VALUES (:faculty_name, :message, :type)";
+        $query = "INSERT INTO notifications (faculty, message, type) VALUES (:faculty, :message, :type)";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([
-            'faculty' => $faculty_name,
+            'faculty' => $faculty,
             'message' => $message,
             'type' => $type
         ]);

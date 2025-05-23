@@ -7,9 +7,11 @@ require_once __DIR__ . '/../../Config/Database.php';
 require_once __DIR__ . '/../../Controllers/FacultyController.php';
 
 use App\Config\Database;
+use App\Controllers\FacultyController;
 
 $database = new Database();
 $conn = $database->connect();
+$facultyController = new FacultyController();
 
 // Handle Add Faculty
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_faculty'])) {
@@ -18,13 +20,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_faculty'])) {
     $email = $_POST['email'];
     $contact = $_POST['contact'];
     $address = $_POST['address'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hashing the password
+    $subjects = $_POST['subjects'] ?? [];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, password) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$facultyId, $name, $email, $contact, $address, $password]);
-
-    header("Location: faculty.php");
-    exit();
+    if ($facultyController->addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password)) {
+        header("Location: faculty.php");
+        exit();
+    } else {
+        $error = "Failed to add faculty member. Please try again.";
+    }
 }
 
 
@@ -36,15 +40,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_faculty'])) {
     $email = $_POST['email'];
     $contact = $_POST['contact'];
     $address = $_POST['address'];
-   
+    $subjects = $_POST['subjects'] ?? [];
 
-
-
-    $stmt = $conn->prepare("UPDATE faculty SET faculty_id=?, name=?, email=?, contact=?, address=? WHERE id=?");
-    $stmt->execute([$facultyId, $name, $email, $contact,$address, $id]);
-
-    header("Location: faculty.php");
-    exit();
+    if ($facultyController->updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects)) {
+        header("Location: faculty.php");
+        exit();
+    } else {
+        $error = "Failed to update faculty member. Please try again.";
+    }
 }
 
 // Handle Delete Faculty
@@ -129,7 +132,8 @@ include './layout/sidebar.php';
                                                     '<?php echo addslashes($faculty['name']); ?>', 
                                                     '<?php echo $faculty['email']; ?>', 
                                                     '<?php echo $faculty['contact']; ?>',
-                                                    '<?php echo addslashes($faculty['address']); ?>'
+                                                    '<?php echo addslashes($faculty['address']); ?>',
+                                                    '<?php echo $faculty['subjects']; ?>'
                                                 )" 
                                                 class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
                                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,115 +218,287 @@ include './layout/sidebar.php';
 
 <!-- Add Faculty Modal -->
 <div id="addFacultyModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         <div class="p-6 border-b border-gray-200">
             <h2 class="text-xl font-bold text-gray-800">Add New Faculty</h2>
         </div>
         
-        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
-            <input type="hidden" name="add_faculty" value="1">
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
-                <input type="text" name="faculty_id" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input type="text" name="name" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" name="email" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                <input type="text" name="contact" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input type="text" name="address" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input type="password" name="password" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
+        <div class="overflow-y-auto flex-grow">
+            <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="add_faculty" value="1">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
+                        <input type="text" name="faculty_id" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input type="text" name="name" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" name="email" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                        <input type="text" name="contact" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" name="address" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
 
-            <div class="flex items-center justify-end space-x-3 pt-4">
-                <button type="button" onclick="closeModal('addFacultyModal')" 
-                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                    Cancel
-                </button>
-                <button type="submit" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Add Faculty
-                </button>
-            </div>
-        </form>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subjects</label>
+                        <div id="subjects-container" class="space-y-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                            <div class="subject-entry flex gap-2">
+                                <select name="subjects[]" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Subject</option>
+                                    <?php
+                                    $subjectStmt = $conn->query("SELECT * FROM subjects");
+                                    while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                                        echo "<option value='" . htmlspecialchars($subject['id']) . "'>" . htmlspecialchars($subject['subject_name']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <button type="button" onclick="removeSubject(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addSubjectField()" class="mt-2 text-blue-600 hover:text-blue-700 flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Another Subject
+                        </button>
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" name="password" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
+                    <button type="button" onclick="closeModal('addFacultyModal')" 
+                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Add Faculty
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Edit Faculty Modal -->
 <div id="editFacultyModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         <div class="p-6 border-b border-gray-200">
             <h2 class="text-xl font-bold text-gray-800">Edit Faculty</h2>
         </div>
         
-        <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
-            <input type="hidden" name="edit_faculty" value="1">
-            <input type="hidden" id="edit_id" name="id">
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
-                <input type="text" id="edit_faculty_id" name="faculty_id" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input type="text" id="edit_name" name="name" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="edit_email" name="email" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                <input type="text" id="edit_contact" name="contact" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <input type="text" id="edit_address" name="address" required 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
+        <div class="overflow-y-auto flex-grow">
+            <form action="faculty.php<?php echo isset($_GET['page']) ? '?page='.$_GET['page'] : ''; ?>" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="edit_faculty" value="1">
+                <input type="hidden" id="edit_id" name="id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Faculty ID</label>
+                        <input type="text" id="edit_faculty_id" name="faculty_id" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input type="text" id="edit_name" name="name" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="edit_email" name="email" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                        <input type="text" id="edit_contact" name="contact" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" id="edit_address" name="address" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
 
-            <div class="flex items-center justify-end space-x-3 pt-4">
-                <button type="button" onclick="closeModal('editFacultyModal')" 
-                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                    Cancel
-                </button>
-                <button type="submit" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Update Faculty
-                </button>
-            </div>
-        </form>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subjects</label>
+                        <div id="edit-subjects-container" class="space-y-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                            <div class="subject-entry flex gap-2">
+                                <select name="subjects[]" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select Subject</option>
+                                    <?php
+                                    $subjectStmt = $conn->query("SELECT * FROM subjects");
+                                    while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                                        echo "<option value='" . htmlspecialchars($subject['id']) . "'>" . htmlspecialchars($subject['subject_name']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <button type="button" onclick="removeSubject(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addEditSubjectField()" class="mt-2 text-blue-600 hover:text-blue-700 flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Another Subject
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
+                    <button type="button" onclick="closeModal('editFacultyModal')" 
+                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Update Faculty
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+
+<script>
+function addSubjectField() {
+    const container = document.getElementById('subjects-container');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'subject-entry flex gap-2';
+    newEntry.innerHTML = `
+        <select name="subjects[]" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Select Subject</option>
+            <?php
+            $subjectStmt = $conn->query("SELECT * FROM subjects");
+            while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                echo "<option value='" . htmlspecialchars($subject['id']) . "'>" . htmlspecialchars($subject['subject_name']) . "</option>";
+            }
+            ?>
+        </select>
+        <button type="button" onclick="removeSubject(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    container.appendChild(newEntry);
+}
+
+function addEditSubjectField() {
+    const container = document.getElementById('edit-subjects-container');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'subject-entry flex gap-2';
+    newEntry.innerHTML = `
+        <select name="subjects[]" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Select Subject</option>
+            <?php
+            $subjectStmt = $conn->query("SELECT * FROM subjects");
+            while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                echo "<option value='" . htmlspecialchars($subject['id']) . "'>" . htmlspecialchars($subject['subject_name']) . "</option>";
+            }
+            ?>
+        </select>
+        <button type="button" onclick="removeSubject(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    container.appendChild(newEntry);
+}
+
+function removeSubject(button) {
+    const entry = button.parentElement;
+    if (document.querySelectorAll('.subject-entry').length > 1) {
+        entry.remove();
+    } else {
+        alert('You must have at least one subject.');
+    }
+}
+
+function editFaculty(id, facultyId, name, email, contact, address, subjects) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_faculty_id').value = facultyId;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_contact').value = contact;
+    document.getElementById('edit_address').value = address;
+
+    // Clear existing subjects
+    const container = document.getElementById('edit-subjects-container');
+    container.innerHTML = '';
+
+    // Add subjects
+    if (subjects) {
+        const subjectArray = subjects.split(',');
+        subjectArray.forEach(subject => {
+            const newEntry = document.createElement('div');
+            newEntry.className = 'subject-entry flex gap-2';
+            newEntry.innerHTML = `
+                <select name="subjects[]" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select Subject</option>
+                    <?php
+                    $subjectStmt = $conn->query("SELECT * FROM subjects");
+                    while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                        echo "<option value='" . htmlspecialchars($subject['id']) . "'>" . htmlspecialchars($subject['subject_name']) . "</option>";
+                    }
+                    ?>
+                </select>
+                <button type="button" onclick="removeSubject(this)" class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(newEntry);
+
+            // Set the selected subject
+            const select = newEntry.querySelector('select');
+            const options = select.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].text === subject.trim()) {
+                    options[i].selected = true;
+                    break;
+                }
+            }
+        });
+    }
+
+    openModal('editFacultyModal');
+}
+</script>

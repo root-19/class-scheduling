@@ -93,6 +93,50 @@ class ScheduleController {
             ];
     
             try {
+                // Check for duplicate month_from
+                $query = "SELECT * FROM schedules WHERE month_from = :month_from AND faculty = :faculty";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':month_from', $data['month_from']);
+                $stmt->bindParam(':faculty', $data['faculty']);
+                $stmt->execute();
+                
+                $existingSchedule = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($existingSchedule) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'This faculty already has a schedule for this month. Please add a new schedule.'
+                    ]);
+                    exit();
+                }
+
+                // Check for schedule conflicts
+                $query = "SELECT * FROM schedules WHERE 
+                    (day_of_week = :day_of_week AND month_from = :month_from) AND
+                    ((time_from <= :time_from AND time_to > :time_from) OR
+                    (time_from < :time_to AND time_to >= :time_to) OR
+                    (time_from >= :time_from AND time_to <= :time_to)) AND
+                    (room = :room OR faculty = :faculty)";
+                
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':day_of_week', $data['day_of_week']);
+                $stmt->bindParam(':month_from', $data['month_from']);
+                $stmt->bindParam(':time_from', $data['time_from']);
+                $stmt->bindParam(':time_to', $data['time_to']);
+                $stmt->bindParam(':room', $data['room']);
+                $stmt->bindParam(':faculty', $data['faculty']);
+                $stmt->execute();
+                
+                $conflicts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                if (!empty($conflicts)) {
+                    echo json_encode([
+                        'status' => 'error', 
+                        'message' => 'Schedule conflict detected! There is already a schedule at this time for either the room or faculty.'
+                    ]);
+                    exit();
+                }
+
                 // Calculate duration of new schedule
                 $newFrom = new \DateTime($data['time_from']);
                 $newTo = new \DateTime($data['time_to']);
@@ -135,32 +179,50 @@ class ScheduleController {
         }
     }
 
-   public function getSchedulesForUser($faculty, $course, $section) {
-    $stmt = $this->conn->prepare("SELECT * FROM schedules WHERE faculty = ? AND course = ? AND section = ?");
-    $stmt->execute([$faculty, $course, $section]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+   public function getSchedulesForUser($faculty, $course = null, $section = null) {
+        $query = "SELECT * FROM schedules WHERE faculty = :faculty";
+        $params = [':faculty' => $faculty];
 
-    $events = [];
-    foreach ($rows as $row) {
-        $events[] = [
-            'title' => $row['subject'],
-            'start' => $row['start_date'],
-            'end' => $row['end_date'],
-            'extendedProps' => [
-                'faculty' => $row['faculty'],
-                'room' => $row['room'],
-                'department' => $row['department'],
-                'course' => $row['course'],
-                'section' => $row['section'],
-                'time_from' => $row['time_from'],
-                'time_to' => $row['time_to'],
-                'building' => $row['building']
-            ]
-        ];
+        if ($course) {
+            $query .= " AND course = :course";
+            $params[':course'] = $course;
+        }
+        if ($section) {
+            $query .= " AND section = :section";
+            $params[':section'] = $section;
+        }
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute($params);
+        $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $events = [];
+        foreach ($schedules as $schedule) {
+            if (empty($schedule['subject']) || $schedule['subject'] === 'No Class') {
+                continue;
+            }
+
+            $date = date('Y') . '-' . date('m-d', strtotime($schedule['month_from']));
+
+            $events[] = [
+                'id' => $schedule['id'],
+                'title' => $schedule['subject'],
+                'start' => $date,
+                'extendedProps' => [
+                    'faculty' => $schedule['faculty'],
+                    'room' => $schedule['room'],
+                    'department' => $schedule['department'],
+                    'course' => $schedule['course'],
+                    'section' => $schedule['section'],
+                    'time_from' => $schedule['time_from'],
+                    'time_to' => $schedule['time_to'],
+                    'building' => $schedule['building']
+                ]
+            ];
+        }
+
+        return $events;
     }
-
-    return $events;
-}
 
 public function getTotalSchedules() {
     return $this->scheduleModel->getTotalSchedules();
