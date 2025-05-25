@@ -5,17 +5,29 @@ use App\Controllers\ScheduleController;
 session_start();
 $scheduleController = new ScheduleController();
 
-$departmentFilter = $_GET['department'] ?? null;
-$schedules = $scheduleController->getSchedules($departmentFilter);
-$departments = $scheduleController->getDepartments();
-$isFiltering = !empty($departmentFilter);
+// Get all schedules
+$schedules = $scheduleController->getSchedules();
 
-// Filter schedules based on student's section and course
+// Debug information
+error_log("Student Session Data: " . print_r($_SESSION, true));
+
+// Filter schedules based on student's section, course, and faculty
 $filteredSchedules = array_filter($schedules, function($schedule) {
-    return $schedule['extendedProps']['section'] === $_SESSION['sections'] && 
-           $schedule['extendedProps']['course'] === $_SESSION['course'];
+    $matches = $schedule['extendedProps']['section'] === $_SESSION['sections'] && 
+               $schedule['extendedProps']['course'] === $_SESSION['course'];
+    
+    // Debug information
+    error_log("Schedule: " . print_r($schedule['extendedProps'], true));
+    error_log("Matches: " . ($matches ? 'true' : 'false'));
+    
+    return $matches;
 });
-$schedules = $filteredSchedules;
+
+// Update schedules with filtered results
+$schedules = array_values($filteredSchedules);
+
+// Debug information
+error_log("Filtered Schedules: " . print_r($schedules, true));
 
 // ✅ Initialize DB connection
 $db = (new \App\Config\Database())->connect();
@@ -194,11 +206,9 @@ $lowestGrades = array_slice($gradeStats, -3);
 
 <script>
     const schedules = <?= json_encode($schedules) ?>;
-    const isFiltering = <?= json_encode($isFiltering) ?>;
+    console.log("Schedules for calendar:", schedules); // Debug log
 
     document.addEventListener("DOMContentLoaded", function () {
-        // Always hide the modal on page load
-        document.getElementById("scheduleModal").style.display = "none";
         const calendarEl = document.getElementById("calendar");
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
@@ -208,17 +218,20 @@ $lowestGrades = array_slice($gradeStats, -3);
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
             events: schedules,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
             eventClick: function (info) {
-                if (isFiltering) {
+                const props = info.event.extendedProps;
+                if (!props || !info.event.title) {
+                    console.log("No data for event:", info.event); // Debug log
                     return;
                 }
 
-                const props = info.event.extendedProps;
-                if (!props || !info.event.title) {
-                    return; // Don't show modal if no data
-                }
-
-                document.getElementById("modalTitle").innerText = info.event.title || 'No Title';
+                // Update modal content
+                document.getElementById("modalTitle").innerText = info.event.title;
                 document.getElementById("modalFaculty").innerText = props.faculty || 'N/A';
                 document.getElementById("modalRoom").innerText = props.room || 'N/A';
                 document.getElementById("modalDepartment").innerText = props.department || 'N/A';
@@ -228,23 +241,24 @@ $lowestGrades = array_slice($gradeStats, -3);
                     `${props.time_from} - ${props.time_to}` : 'N/A';
                 document.getElementById("modalBuilding").innerText = props.building || 'N/A';
 
+                // Show modal
                 document.getElementById("scheduleModal").style.display = "flex";
             },
             height: 'auto',
-            contentHeight: 'auto'
+            contentHeight: 'auto',
+            eventDidMount: function(info) {
+                // Add tooltip with occurrence information
+                const props = info.event.extendedProps;
+                if (props && props.occurrence && props.total_occurrences) {
+                    info.el.title = `Meeting ${props.occurrence} of ${props.total_occurrences}`;
+                }
+            }
         });
         calendar.render();
     });
 
     function closeModal() {
         document.getElementById("scheduleModal").style.display = "none";
-    }
-
-    function filterEvents() {
-        const selectedDept = document.getElementById("departmentFilter").value;
-        const url = new URL(window.location.href);
-        url.searchParams.set('department', selectedDept);
-        window.location.href = url.toString();
     }
 
     // Initialize grade charts

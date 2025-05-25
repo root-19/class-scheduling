@@ -49,11 +49,13 @@ include "./layout/sidebar.php";
     <input type="text" name="day_of_week" placeholder="Day of Week" required class="w-full p-2 border rounded">
     <input type="text" name="subject" placeholder="Subject" required class="w-full p-2 border rounded">
     
-    <!-- Calendar-based Month From Input -->
-    <input type="month" name="month_from" required class="w-full p-2 border rounded">
+    <!-- Date From Input -->
+    <label for="month_from">Date From:</label>
+    <input type="date" name="month_from" required class="w-full p-2 border rounded">
     
-    <!-- Calendar-based Month To Input -->
-    <input type="month" name="month_to" required class="w-full p-2 border rounded">
+    <!-- Date To Input -->
+    <label for="month_to">Date To:</label>
+    <input type="date" name="month_to" required class="w-full p-2 border rounded">
 
 <!-- Building Dropdown -->
 <select id="building" name="building" required class="w-full p-2 border rounded">

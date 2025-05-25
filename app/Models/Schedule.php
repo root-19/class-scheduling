@@ -54,13 +54,16 @@ class Schedule {
         $query = "UPDATE " . $this->table . " SET 
             faculty = :faculty,
             room = :room,
+            day_of_week = :day_of_week,
+
             department = :department,
             course = :course,
             section = :section,
             time_from = :time_from,
             time_to = :time_to,
             building = :building,
-            month_from = :month_from
+            month_from = :month_from,
+            month_to = :month_to
             WHERE id = :id";
 
         try {

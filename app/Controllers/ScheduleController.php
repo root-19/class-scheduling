@@ -9,6 +9,7 @@ use App\Models\Schedule;
 use App\Models\Notification;
 use App\Config\Database;
 use PDO;
+use DateTime;
 
 class ScheduleController {
     private $scheduleModel;
@@ -24,7 +25,7 @@ class ScheduleController {
     }
 
     public function getSchedules($department = null) {
-        $query = "SELECT id, faculty, room, department, subject, course, section, time_from, time_to, month_from, building FROM schedules";
+        $query = "SELECT id, faculty, room, department, subject, course, section, time_from, time_to, month_from, month_to, building, day_of_week FROM schedules";
         if ($department) {
             $query .= " WHERE department = :department";
         }
@@ -44,24 +45,51 @@ class ScheduleController {
                 continue;
             }
 
-            $date = date('Y') . '-' . date('m-d', strtotime($schedule['month_from']));
+            // Get the start and end dates
+            $startDate = new DateTime($schedule['month_from']);
+            $endDate = new DateTime($schedule['month_to']);
+            
+            // Get the number of meetings from day_of_week
+            $numberOfMeetings = (int)$schedule['day_of_week'];
+            
+            // Calculate the interval between meetings
+            $totalDays = $startDate->diff($endDate)->days;
+            $interval = floor($totalDays / ($numberOfMeetings - 1));
+            
+            // Create exactly the number of events specified in day_of_week
+            for ($i = 0; $i < $numberOfMeetings; $i++) {
+                $eventDate = clone $startDate;
+                if ($i > 0) {
+                    $eventDate->modify('+' . ($i * $interval) . ' days');
+                }
+                
+                // Ensure we don't go past the end date
+                if ($eventDate > $endDate) {
+                    $eventDate = clone $endDate;
+                }
 
-            $events[] = [
-                'id' => $schedule['id'],
-                'title' => $schedule['subject'] . ' ' . $schedule['time_from'],
-                'start' => $date,
-                'extendedProps' => [
-                    'faculty' => $schedule['faculty'],
-                    'room' => $schedule['room'],
-                    'department' => $schedule['department'],
-                    'course' => $schedule['course'],
-                    'section' => $schedule['section'],
-                    'time_from' => $schedule['time_from'],
-                    'time_to' => $schedule['time_to'],
-                    'building' => $schedule['building']
-
-                ]
-            ];
+                $events[] = [
+                    'id' => $schedule['id'] . '_' . ($i + 1),
+                    'title' => $schedule['subject'] . ' (' . ($i + 1) . '/' . $numberOfMeetings . ')',
+                    'start' => $eventDate->format('Y-m-d') . 'T' . $schedule['time_from'],
+                    'end' => $eventDate->format('Y-m-d') . 'T' . $schedule['time_to'],
+                    'extendedProps' => [
+                        'faculty' => $schedule['faculty'],
+                        'room' => $schedule['room'],
+                        'department' => $schedule['department'],
+                        'course' => $schedule['course'],
+                        'section' => $schedule['section'],
+                        'time_from' => $schedule['time_from'],
+                        'time_to' => $schedule['time_to'],
+                        'building' => $schedule['building'],
+                        'month_from' => $schedule['month_from'],
+                        'month_to' => $schedule['month_to'],
+                        'day_of_week' => $schedule['day_of_week'],
+                        'occurrence' => $i + 1,
+                        'total_occurrences' => $numberOfMeetings
+                    ]
+                ];
+            }
         }
 
         return $events;
@@ -93,34 +121,14 @@ class ScheduleController {
             ];
     
             try {
-                // Check for duplicate month_from
-                $query = "SELECT * FROM schedules WHERE month_from = :month_from AND faculty = :faculty";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':month_from', $data['month_from']);
-                $stmt->bindParam(':faculty', $data['faculty']);
-                $stmt->execute();
-                
-                $existingSchedule = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if ($existingSchedule) {
-                    echo json_encode([
-                        'status' => 'error',
-                        'message' => 'This faculty already has a schedule for this month. Please add a new schedule.'
-                    ]);
-                    exit();
-                }
-
-                // Check for schedule conflicts
+                // Check for time conflicts
                 $query = "SELECT * FROM schedules WHERE 
-                    (day_of_week = :day_of_week AND month_from = :month_from) AND
                     ((time_from <= :time_from AND time_to > :time_from) OR
                     (time_from < :time_to AND time_to >= :time_to) OR
                     (time_from >= :time_from AND time_to <= :time_to)) AND
                     (room = :room OR faculty = :faculty)";
                 
                 $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':day_of_week', $data['day_of_week']);
-                $stmt->bindParam(':month_from', $data['month_from']);
                 $stmt->bindParam(':time_from', $data['time_from']);
                 $stmt->bindParam(':time_to', $data['time_to']);
                 $stmt->bindParam(':room', $data['room']);
@@ -144,10 +152,9 @@ class ScheduleController {
     
                 // Check existing total for the day for this faculty
                 $query = "SELECT time_from, time_to FROM schedules 
-                          WHERE faculty = :faculty AND month_from = :day";
+                          WHERE faculty = :faculty";
                 $stmt = $this->conn->prepare($query);
                 $stmt->bindParam(':faculty', $data['faculty']);
-                $stmt->bindParam(':day', $data['month_from']);
                 $stmt->execute();
                 $existingSchedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -202,23 +209,51 @@ class ScheduleController {
                 continue;
             }
 
-            $date = date('Y') . '-' . date('m-d', strtotime($schedule['month_from']));
+            // Get the start and end dates
+            $startDate = new DateTime($schedule['month_from']);
+            $endDate = new DateTime($schedule['month_to']);
+            
+            // Get the number of meetings from day_of_week
+            $numberOfMeetings = (int)$schedule['day_of_week'];
+            
+            // Calculate the interval between meetings
+            $totalDays = $startDate->diff($endDate)->days;
+            $interval = floor($totalDays / ($numberOfMeetings - 1));
+            
+            // Create exactly the number of events specified in day_of_week
+            for ($i = 0; $i < $numberOfMeetings; $i++) {
+                $eventDate = clone $startDate;
+                if ($i > 0) {
+                    $eventDate->modify('+' . ($i * $interval) . ' days');
+                }
+                
+                // Ensure we don't go past the end date
+                if ($eventDate > $endDate) {
+                    $eventDate = clone $endDate;
+                }
 
-            $events[] = [
-                'id' => $schedule['id'],
-                'title' => $schedule['subject'],
-                'start' => $date,
-                'extendedProps' => [
-                    'faculty' => $schedule['faculty'],
-                    'room' => $schedule['room'],
-                    'department' => $schedule['department'],
-                    'course' => $schedule['course'],
-                    'section' => $schedule['section'],
-                    'time_from' => $schedule['time_from'],
-                    'time_to' => $schedule['time_to'],
-                    'building' => $schedule['building']
-                ]
-            ];
+                $events[] = [
+                    'id' => $schedule['id'] . '_' . ($i + 1),
+                    'title' => $schedule['subject'] . ' (' . ($i + 1) . '/' . $numberOfMeetings . ')',
+                    'start' => $eventDate->format('Y-m-d') . 'T' . $schedule['time_from'],
+                    'end' => $eventDate->format('Y-m-d') . 'T' . $schedule['time_to'],
+                    'extendedProps' => [
+                        'faculty' => $schedule['faculty'],
+                        'room' => $schedule['room'],
+                        'department' => $schedule['department'],
+                        'course' => $schedule['course'],
+                        'section' => $schedule['section'],
+                        'time_from' => $schedule['time_from'],
+                        'time_to' => $schedule['time_to'],
+                        'building' => $schedule['building'],
+                        'month_from' => $schedule['month_from'],
+                        'month_to' => $schedule['month_to'],
+                        'day_of_week' => $schedule['day_of_week'],
+                        'occurrence' => $i + 1,
+                        'total_occurrences' => $numberOfMeetings
+                    ]
+                ];
+            }
         }
 
         return $events;
@@ -334,7 +369,9 @@ public function handleRequest() {
                 'time_from' => htmlspecialchars(trim($_POST['time_from'] ?? '')),
                 'time_to' => htmlspecialchars(trim($_POST['time_to'] ?? '')),
                 'building' => htmlspecialchars(trim($_POST['building'] ?? '')),
-                'month_from' => date('Y-m-d') // Current date for the update
+                'month_from' => htmlspecialchars(trim($_POST['month_from'] ?? '')),
+                'month_to' => htmlspecialchars(trim($_POST['month_to'] ?? '')),
+                'day_of_week' => htmlspecialchars((trim($_POST['day_of_week'] ?? '')))
             ];
             
             $response = $this->updateSchedule($_POST['scheduleId'], $data);

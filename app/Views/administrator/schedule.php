@@ -24,10 +24,33 @@ include "./layout/sidebar.php";
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add SweetAlert2 CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     <style>
         .modal { display: none; z-index: 50; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); }
+        .modal-overlay { position: fixed; inset: 0;  }
         
+        /* Modal content styles */
+        .modal > div {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal > div > div:first-child {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .modal > div > div:last-child {
+            position: sticky;
+            bottom: 0;
+            background: #f9fafb;
+            z-index: 1;
+        }
+
         /* Custom FullCalendar Styles */
         .fc-event {
             cursor: pointer;
@@ -137,11 +160,20 @@ include "./layout/sidebar.php";
 <div id="scheduleModal" class="modal fixed inset-0 flex items-center justify-center">
     <div class="modal-overlay" onclick="closeModal()"></div>
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 z-50 relative">
-        <div class="p-6 border-b border-gray-200">
-            <h3 class="text-xl font-bold text-gray-800" id="modalTitle"></h3>
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-800" id="modalTitle"></h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         
-        <div class="p-6">
+        <!-- Content -->
+        <div class="p-6 bg-white">
             <form id="editScheduleForm" class="space-y-6">
                 <input type="hidden" id="scheduleId" name="scheduleId">
                 
@@ -150,28 +182,35 @@ include "./layout/sidebar.php";
                     <div class="col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Faculty Name</label>
                         <input type="text" id="modalFaculty" name="faculty" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                    </div>
+
+                    <!-- Day of Week -->
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Day of Week</label>
+                        <input type="text" id="modalDay_of_week" name="day_of_week" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                     </div>
 
                     <!-- Department -->
                     <div class="col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
                         <input type="text" id="modalDepartment" name="department" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                     </div>
 
                     <!-- Course -->
                     <div class="col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
                         <input type="text" id="modalCourse" name="course" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                     </div>
 
                     <!-- Section -->
                     <div class="col-span-1">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
                         <input type="text" id="modalSection" name="section" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                     </div>
 
                     <!-- Time -->
@@ -181,12 +220,29 @@ include "./layout/sidebar.php";
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Start Time</label>
                                 <input type="time" id="modalTimeFrom" name="time_from" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">End Time</label>
                                 <input type="time" id="modalTimeTo" name="time_to" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Start Date</label>
+                                <input type="date" id="modalMonthFrom" name="month_from" 
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">End Date</label>
+                                <input type="date" id="modalMonthTo" name="month_to" 
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                             </div>
                         </div>
                     </div>
@@ -198,12 +254,12 @@ include "./layout/sidebar.php";
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Building</label>
                                 <input type="text" id="modalBuilding" name="building" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Room</label>
                                 <input type="text" id="modalRoom" name="room" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
                             </div>
                         </div>
                     </div>
@@ -211,13 +267,14 @@ include "./layout/sidebar.php";
             </form>
         </div>
 
-        <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+        <!-- Footer -->
+        <div class="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3 border-t border-gray-200">
             <button onclick="closeModal()" 
-                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                class="px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-300 font-medium">
                 Cancel
             </button>
             <button onclick="saveScheduleChanges()" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 Save Changes
             </button>
         </div>
@@ -243,6 +300,11 @@ include "./layout/sidebar.php";
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
             events: schedules,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
             eventClick: function (info) {
                 if (isFiltering) {
                     return;
@@ -252,7 +314,7 @@ include "./layout/sidebar.php";
                 const props = event.extendedProps;
                 
                 // Populate modal fields
-                document.getElementById("scheduleId").value = event.id;
+                document.getElementById("scheduleId").value = event.id.split('_')[0]; // Remove the _1 or _2 suffix
                 document.getElementById("modalTitle").innerText = event.title;
                 document.getElementById("modalFaculty").value = props.faculty;
                 document.getElementById("modalRoom").value = props.room;
@@ -262,6 +324,9 @@ include "./layout/sidebar.php";
                 document.getElementById("modalTimeFrom").value = props.time_from;
                 document.getElementById("modalTimeTo").value = props.time_to;
                 document.getElementById("modalBuilding").value = props.building;
+                document.getElementById("modalMonthFrom").value = props.month_from;
+                document.getElementById("modalMonthTo").value = props.month_to;
+                document.getElementById("modalDay_of_week").value = props.day_of_week;
 
                 document.getElementById("scheduleModal").style.display = "flex";
             }
@@ -274,23 +339,17 @@ include "./layout/sidebar.php";
     }
 
     function showNotification(message, isSuccess = true) {
-        const toast = document.getElementById("notificationToast");
-        const messageEl = document.getElementById("notificationMessage");
-        
-        toast.className = `fixed bottom-4 right-4 ${isSuccess ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-        messageEl.textContent = message;
-        toast.classList.remove("hidden");
-        
-        // Add animation classes
-        toast.classList.add('animate-fade-in');
-        
-        setTimeout(() => {
-            toast.classList.add('animate-fade-out');
-            setTimeout(() => {
-                toast.classList.add("hidden");
-                toast.classList.remove('animate-fade-in', 'animate-fade-out');
-            }, 300);
-        }, 3000);
+        Swal.fire({
+            title: isSuccess ? 'Success!' : 'Error!',
+            text: message,
+            icon: isSuccess ? 'success' : 'error',
+            confirmButtonColor: '#3b82f6',
+            timer: 3000,
+            timerProgressBar: true,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false
+        });
     }
 
     function saveScheduleChanges() {
@@ -339,7 +398,7 @@ include "./layout/sidebar.php";
     // Add validation before saving
     function validateScheduleForm() {
         const form = document.getElementById("editScheduleForm");
-        const requiredFields = ['faculty', 'room', 'department', 'course', 'section', 'time_from', 'time_to'];
+        const requiredFields = ['faculty', 'room', 'day_of_week', 'department', 'course', 'section', 'time_from', 'time_to'];
         let isValid = true;
         let firstInvalidField = null;
 

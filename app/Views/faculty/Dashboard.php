@@ -203,8 +203,10 @@ include './layout/sidebar.php';
         border-radius: 1.5rem;
         box-shadow: 0 20px 60px rgba(0,0,0,0.2);
         padding: 2rem;
-        min-width: 400px;
-        max-width: 90vw;
+        min-width: 600px;
+        max-width: 98vw;
+        max-height: 90vh;
+        overflow-y: auto;
         z-index: 100;
         opacity: 0;
         pointer-events: none;
@@ -291,6 +293,33 @@ include './layout/sidebar.php';
                 <p class="font-medium" id="modalBuilding"></p>
             </div>
         </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+            <svg class="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <div>
+                <p class="text-sm text-gray-500">Day of Week</p>
+                <p class="font-medium" id="modalDayOfWeek"></p>
+            </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+            <svg class="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <p class="text-sm text-gray-500">Date From</p>
+                <p class="font-medium" id="modalMonthFrom"></p>
+            </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+            <svg class="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <p class="text-sm text-gray-500">Date To</p>
+                <p class="font-medium" id="modalMonthTo"></p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -311,6 +340,13 @@ function closeModal() {
 }
 document.getElementById('customModalOverlay').onclick = closeModal;
 
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === 'N/A') return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr; // fallback
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -321,6 +357,11 @@ document.addEventListener('DOMContentLoaded', function() {
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         events: <?php echo json_encode($schedules); ?>,
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        },
         eventClick: function(info) {
             const event = info.event;
             const props = event.extendedProps;
@@ -331,6 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modalSection').innerText = props.section || 'N/A';
             document.getElementById('modalTime').innerText = `${props.time_from || 'N/A'} - ${props.time_to || 'N/A'}`;
             document.getElementById('modalBuilding').innerText = props.building || 'N/A';
+            document.getElementById('modalDayOfWeek').innerText = props.day_of_week || 'N/A';
+            document.getElementById('modalMonthFrom').innerText = formatDate(props.month_from);
+            document.getElementById('modalMonthTo').innerText = formatDate(props.month_to);
             openModal();
         },
         height: 'auto',
