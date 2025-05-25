@@ -69,16 +69,15 @@ if (isset($_GET['delete'])) {
 $facultyQuery = $conn->query("SELECT * FROM faculty");
 $faculties = $facultyQuery->fetchAll(PDO::FETCH_ASSOC);
 
-
-// Fetch students and their grades
+// Fetch students and their grades with attendance
 foreach ($students as &$student) {
     try {
-        $stmt = $conn->prepare("SELECT id, subject, prelim, midterm, final, exam FROM grades WHERE student_id = ?");
+        $stmt = $conn->prepare("SELECT id, subject, prelim, midterm, final, exam, attendance FROM grades WHERE student_id = ?");
         $stmt->execute([$student['id']]);
         $student['grades'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         // If exam column doesn't exist, fetch without it
-        $stmt = $conn->prepare("SELECT id, subject, prelim, midterm, final FROM grades WHERE student_id = ?");
+        $stmt = $conn->prepare("SELECT id, subject, prelim, midterm, final, attendance FROM grades WHERE student_id = ?");
         $stmt->execute([$student['id']]);
         $student['grades'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -117,11 +116,21 @@ include './layout/sidebar.php';
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <?php foreach ($students as $student): ?>
+                            <?php
+                            // Calculate total attendance
+                            $totalAttendance = 0;
+                            if (!empty($student['grades'])) {
+                                foreach ($student['grades'] as $grade) {
+                                    $totalAttendance += intval($grade['attendance'] ?? 0);
+                                }
+                            }
+                            ?>
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['id']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['student_id']) ?></td>
@@ -137,6 +146,7 @@ include './layout/sidebar.php';
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['email']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['contact']) ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $totalAttendance ?> days</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center space-x-2">
                                         <button type="button" 
@@ -243,6 +253,7 @@ include './layout/sidebar.php';
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Midterm</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -300,6 +311,12 @@ include './layout/sidebar.php';
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Exam</label>
                 <input type="number" name="exam" id="edit_exam" step="0.01" min="0" max="100" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Attendance (Days)</label>
+                <input type="number" name="attendance" id="edit_attendance" min="0" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
 
@@ -425,6 +442,7 @@ function openModal(student) {
                 <td class="border px-4 py-2">${grade.midterm || '-'}</td>
                 <td class="border px-4 py-2">${grade.final || '-'}</td>
                 <td class="border px-4 py-2">${grade.exam || '-'}</td>
+                <td class="border px-4 py-2">${grade.attendance || '0'} days</td>
                 <td class="border px-4 py-2">
                     <button onclick="editGrade('${grade.id}', event)" 
                             class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
@@ -439,7 +457,7 @@ function openModal(student) {
         });
     } else {
         gradesBody.innerHTML = `<tr>
-            <td colspan="6" class="px-4 py-2 text-center text-sm text-gray-500">
+            <td colspan="7" class="px-4 py-2 text-center text-sm text-gray-500">
                 No grades available for this student.
             </td>
         </tr>`;
@@ -462,7 +480,11 @@ function editGrade(gradeId, event) {
     
     // Set the values in the edit form
     document.getElementById('edit_subject_display').value = cells[0].textContent;
+    document.getElementById('edit_prelim').value = cells[1].textContent !== '-' ? cells[1].textContent : '';
+    document.getElementById('edit_midterm').value = cells[2].textContent !== '-' ? cells[2].textContent : '';
+    document.getElementById('edit_final').value = cells[3].textContent !== '-' ? cells[3].textContent : '';
     document.getElementById('edit_exam').value = cells[4].textContent !== '-' ? cells[4].textContent : '';
+    document.getElementById('edit_attendance').value = cells[5].textContent.replace(' days', '');
     
     // Store the grade ID
     document.getElementById('editGradeForm').setAttribute('data-grade-id', gradeId);
@@ -475,7 +497,11 @@ document.getElementById('editGradeForm').addEventListener('submit', function(e) 
     const formData = new FormData();
     formData.append('action', 'edit');
     formData.append('id', this.getAttribute('data-grade-id'));
+    formData.append('prelim', document.getElementById('edit_prelim').value);
+    formData.append('midterm', document.getElementById('edit_midterm').value);
+    formData.append('final', document.getElementById('edit_final').value);
     formData.append('exam', document.getElementById('edit_exam').value);
+    formData.append('attendance', document.getElementById('edit_attendance').value);
 
     fetch('../../../app/Controllers/GradeController.php', {
         method: 'POST',
@@ -486,11 +512,11 @@ document.getElementById('editGradeForm').addEventListener('submit', function(e) 
         if (data.success) {
             location.reload();
         } else {
-            alert('Error updating exam grade: ' + (data.message || 'Unknown error'));
+            alert('Error updating grades: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
-        alert('Error saving exam grade');
+        alert('Error saving grades');
     });
 });
 
