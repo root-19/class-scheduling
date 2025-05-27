@@ -56,7 +56,7 @@ foreach ($schedules as $event) {
 include './layout/sidebar.php';
 ?>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 mr-60">
     <div class="p-8">
         <div class="max-w-7xl mx-auto">
             <!-- Welcome Section -->

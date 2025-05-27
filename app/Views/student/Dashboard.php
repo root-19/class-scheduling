@@ -10,15 +10,36 @@ $schedules = $scheduleController->getSchedules();
 
 // Debug information
 error_log("Student Session Data: " . print_r($_SESSION, true));
+error_log("Total schedules before filtering: " . count($schedules));
+
+// Check if required session data exists
+if (!isset($_SESSION['sections']) || !isset($_SESSION['course'])) {
+    error_log("ERROR: Missing required session data - sections: " . (isset($_SESSION['sections']) ? $_SESSION['sections'] : 'NOT SET') . 
+              ", course: " . (isset($_SESSION['course']) ? $_SESSION['course'] : 'NOT SET'));
+}
 
 // Filter schedules based on student's section, course, and faculty
 $filteredSchedules = array_filter($schedules, function($schedule) {
+    // Debug each schedule's properties
+    error_log("Checking schedule: " . print_r($schedule, true));
+    
+    // Check if required properties exist
+    if (!isset($schedule['extendedProps']['section']) || !isset($schedule['extendedProps']['course'])) {
+        error_log("ERROR: Schedule missing required properties - section: " . 
+                 (isset($schedule['extendedProps']['section']) ? $schedule['extendedProps']['section'] : 'NOT SET') . 
+                 ", course: " . (isset($schedule['extendedProps']['course']) ? $schedule['extendedProps']['course'] : 'NOT SET'));
+        return false;
+    }
+    
+    error_log("Comparing - Student section: '" . $_SESSION['sections'] . "' vs Schedule section: '" . 
+              $schedule['extendedProps']['section'] . "'");
+    error_log("Comparing - Student course: '" . $_SESSION['course'] . "' vs Schedule course: '" . 
+              $schedule['extendedProps']['course'] . "'");
+    
     $matches = $schedule['extendedProps']['section'] === $_SESSION['sections'] && 
                $schedule['extendedProps']['course'] === $_SESSION['course'];
     
-    // Debug information
-    error_log("Schedule: " . print_r($schedule['extendedProps'], true));
-    error_log("Matches: " . ($matches ? 'true' : 'false'));
+    error_log("Schedule matches: " . ($matches ? 'true' : 'false'));
     
     return $matches;
 });
@@ -27,7 +48,8 @@ $filteredSchedules = array_filter($schedules, function($schedule) {
 $schedules = array_values($filteredSchedules);
 
 // Debug information
-error_log("Filtered Schedules: " . print_r($schedules, true));
+error_log("Total schedules after filtering: " . count($schedules));
+error_log("Final filtered schedules: " . print_r($schedules, true));
 
 // ✅ Initialize DB connection
 $db = (new \App\Config\Database())->connect();
@@ -114,6 +136,14 @@ $lowestGrades = array_slice($gradeStats, -3);
                     <p><strong class="font-medium text-gray-900">Course:</strong> <?= htmlspecialchars($_SESSION['course'] ?? 'N/A') ?></p>
                     <p><strong class="font-medium text-gray-900">Section:</strong> <?= htmlspecialchars($_SESSION['sections'] ?? 'N/A') ?></p>
                 </div>
+
+          <a href="../../Views/faculty/logout.php" class="flex  text-black items-center space-x-2 p-2 rounded-lg hover:bg-red-600 hover:text-white">
+            <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+            </svg>
+            <span>Logout</span>
+          </a>
+  
             <?php } ?>
         </div>
 

@@ -1,0 +1,305 @@
+[27-May-2025 04:45:02 Europe/Berlin] === Starting student update process ===
+[27-May-2025 04:45:02 Europe/Berlin] Time: 2025-05-27 04:45:02
+[27-May-2025 04:45:02 Europe/Berlin] Request Method: POST
+[27-May-2025 04:45:02 Europe/Berlin] Database connection established
+[27-May-2025 04:45:02 Europe/Berlin] POST Data received: Array
+(
+    [id] => 30
+    [first_name] => Riza
+    [last_name] => Subida
+    [email] => thejust10academy@gmail.com
+    [student_id] => 0000032
+    [contact] => 09261815461
+    [faculty_name] => albert
+    [course] => BSCO
+    [sections] => "A12"
+    [subjects] => Array
+        (
+            [0] => test
+            [1] => lols
+        )
+
+    [update_student] => 
+)
+
+[27-May-2025 04:45:02 Europe/Berlin] Processed form data:
+[27-May-2025 04:45:02 Europe/Berlin] ID: 30
+[27-May-2025 04:45:02 Europe/Berlin] First Name: Riza
+[27-May-2025 04:45:02 Europe/Berlin] Last Name: Subida
+[27-May-2025 04:45:02 Europe/Berlin] Email: thejust10academy@gmail.com
+[27-May-2025 04:45:02 Europe/Berlin] Student ID: 0000032
+[27-May-2025 04:45:02 Europe/Berlin] Contact: 09261815461
+[27-May-2025 04:45:02 Europe/Berlin] Faculty: albert
+[27-May-2025 04:45:02 Europe/Berlin] Course: BSCO
+[27-May-2025 04:45:02 Europe/Berlin] Sections: "A12"
+[27-May-2025 04:45:02 Europe/Berlin] Subjects: Array
+(
+    [0] => test
+    [1] => lols
+)
+
+[27-May-2025 04:45:02 Europe/Berlin] Checking for duplicate email...
+[27-May-2025 04:45:02 Europe/Berlin] Checking for duplicate student ID...
+[27-May-2025 04:45:02 Europe/Berlin] Fetching current student data...
+[27-May-2025 04:45:02 Europe/Berlin] Processed subjects string: test, lols
+[27-May-2025 04:45:02 Europe/Berlin] Preparing to update student information...
+[27-May-2025 04:45:02 Europe/Berlin] Update parameters: Array
+(
+    [0] => Riza
+    [1] => Subida
+    [2] => thejust10academy@gmail.com
+    [3] => 0000032
+    [4] => 09261815461
+    [5] => albert
+    [6] => BSCO
+    [7] => "A12"
+    [8] => test, lols
+    [9] => 30
+)
+
+[27-May-2025 04:45:02 Europe/Berlin] Changes made: faculty, course, subjects
+[27-May-2025 04:45:02 Europe/Berlin] Update completed successfully
+[27-May-2025 04:45:18 Europe/Berlin] === Starting student update process ===
+[27-May-2025 04:45:18 Europe/Berlin] Time: 2025-05-27 04:45:18
+[27-May-2025 04:45:18 Europe/Berlin] Request Method: POST
+[27-May-2025 04:45:18 Europe/Berlin] Database connection established
+[27-May-2025 04:45:18 Europe/Berlin] POST Data received: Array
+(
+    [id] => 30
+    [first_name] => Riza
+    [last_name] => Subida
+    [email] => thejust10academy@gmail.com
+    [student_id] => 0000032
+    [contact] => 09261815461
+    [faculty_name] => albert
+    [course] => BSCOE
+    [sections] => "A12"
+    [subjects] => Array
+        (
+            [0] => test
+            [1] => lols
+        )
+
+    [update_student] => 
+)
+
+[27-May-2025 04:45:18 Europe/Berlin] Processed form data:
+[27-May-2025 04:45:18 Europe/Berlin] ID: 30
+[27-May-2025 04:45:18 Europe/Berlin] First Name: Riza
+[27-May-2025 04:45:18 Europe/Berlin] Last Name: Subida
+[27-May-2025 04:45:18 Europe/Berlin] Email: thejust10academy@gmail.com
+[27-May-2025 04:45:18 Europe/Berlin] Student ID: 0000032
+[27-May-2025 04:45:18 Europe/Berlin] Contact: 09261815461
+[27-May-2025 04:45:18 Europe/Berlin] Faculty: albert
+[27-May-2025 04:45:18 Europe/Berlin] Course: BSCOE
+[27-May-2025 04:45:18 Europe/Berlin] Sections: "A12"
+[27-May-2025 04:45:18 Europe/Berlin] Subjects: Array
+(
+    [0] => test
+    [1] => lols
+)
+
+[27-May-2025 04:45:18 Europe/Berlin] Checking for duplicate email...
+[27-May-2025 04:45:18 Europe/Berlin] Checking for duplicate student ID...
+[27-May-2025 04:45:18 Europe/Berlin] Fetching current student data...
+[27-May-2025 04:45:18 Europe/Berlin] Processed subjects string: test, lols
+[27-May-2025 04:45:18 Europe/Berlin] Preparing to update student information...
+[27-May-2025 04:45:18 Europe/Berlin] Update parameters: Array
+(
+    [0] => Riza
+    [1] => Subida
+    [2] => thejust10academy@gmail.com
+    [3] => 0000032
+    [4] => 09261815461
+    [5] => albert
+    [6] => BSCOE
+    [7] => "A12"
+    [8] => test, lols
+    [9] => 30
+)
+
+[27-May-2025 04:45:18 Europe/Berlin] Changes made: course
+[27-May-2025 04:45:18 Europe/Berlin] Update completed successfully
+[27-May-2025 04:47:12 Europe/Berlin] === Starting student update process ===
+[27-May-2025 04:47:12 Europe/Berlin] Time: 2025-05-27 04:47:12
+[27-May-2025 04:47:12 Europe/Berlin] Request Method: POST
+[27-May-2025 04:47:12 Europe/Berlin] Database connection established
+[27-May-2025 04:47:12 Europe/Berlin] POST Data received: Array
+(
+    [id] => 2
+    [first_name] => test
+    [last_name] => acuna
+    [email] => hperformanceexhaust@gmail.com
+    [student_id] => 00002
+    [contact] => 09090905362u3
+    [faculty_name] => albert
+    [course] => BSIS
+    [sections] => "IT3A"
+    [subjects] => Array
+        (
+            [0] => test
+            [1] => lols
+        )
+
+    [update_student] => 
+)
+
+[27-May-2025 04:47:12 Europe/Berlin] Processed form data:
+[27-May-2025 04:47:12 Europe/Berlin] ID: 2
+[27-May-2025 04:47:12 Europe/Berlin] First Name: test
+[27-May-2025 04:47:12 Europe/Berlin] Last Name: acuna
+[27-May-2025 04:47:12 Europe/Berlin] Email: hperformanceexhaust@gmail.com
+[27-May-2025 04:47:12 Europe/Berlin] Student ID: 00002
+[27-May-2025 04:47:12 Europe/Berlin] Contact: 09090905362u3
+[27-May-2025 04:47:12 Europe/Berlin] Faculty: albert
+[27-May-2025 04:47:12 Europe/Berlin] Course: BSIS
+[27-May-2025 04:47:12 Europe/Berlin] Sections: "IT3A"
+[27-May-2025 04:47:12 Europe/Berlin] Subjects: Array
+(
+    [0] => test
+    [1] => lols
+)
+
+[27-May-2025 04:47:12 Europe/Berlin] Checking for duplicate email...
+[27-May-2025 04:47:12 Europe/Berlin] Checking for duplicate student ID...
+[27-May-2025 04:47:12 Europe/Berlin] Fetching current student data...
+[27-May-2025 04:47:12 Europe/Berlin] Processed subjects string: test, lols
+[27-May-2025 04:47:12 Europe/Berlin] Preparing to update student information...
+[27-May-2025 04:47:12 Europe/Berlin] Update parameters: Array
+(
+    [0] => test
+    [1] => acuna
+    [2] => hperformanceexhaust@gmail.com
+    [3] => 00002
+    [4] => 09090905362u3
+    [5] => albert
+    [6] => BSIS
+    [7] => "IT3A"
+    [8] => test, lols
+    [9] => 2
+)
+
+[27-May-2025 04:47:12 Europe/Berlin] Changes made: faculty, course, sections, subjects
+[27-May-2025 04:47:12 Europe/Berlin] Update completed successfully
+[27-May-2025 04:57:56 Europe/Berlin] === Starting student update process ===
+[27-May-2025 04:57:56 Europe/Berlin] Time: 2025-05-27 04:57:56
+[27-May-2025 04:57:56 Europe/Berlin] Request Method: POST
+[27-May-2025 04:57:56 Europe/Berlin] Database connection established
+[27-May-2025 04:57:56 Europe/Berlin] POST Data received: Array
+(
+    [id] => 30
+    [first_name] => Riza
+    [last_name] => Subida
+    [email] => thejust10academy@gmail.com
+    [student_id] => 0000032
+    [contact] => 09261815461
+    [faculty_name] => albert
+    [course] => BSCOE
+    [sections] => A12
+    [subjects] => Array
+        (
+            [0] => test
+            [1] => lols
+        )
+
+    [update_student] => 
+)
+
+[27-May-2025 04:57:56 Europe/Berlin] Processed form data:
+[27-May-2025 04:57:56 Europe/Berlin] ID: 30
+[27-May-2025 04:57:56 Europe/Berlin] First Name: Riza
+[27-May-2025 04:57:56 Europe/Berlin] Last Name: Subida
+[27-May-2025 04:57:56 Europe/Berlin] Email: thejust10academy@gmail.com
+[27-May-2025 04:57:56 Europe/Berlin] Student ID: 0000032
+[27-May-2025 04:57:56 Europe/Berlin] Contact: 09261815461
+[27-May-2025 04:57:56 Europe/Berlin] Faculty: albert
+[27-May-2025 04:57:56 Europe/Berlin] Course: BSCOE
+[27-May-2025 04:57:56 Europe/Berlin] Sections: A12
+[27-May-2025 04:57:56 Europe/Berlin] Subjects: Array
+(
+    [0] => test
+    [1] => lols
+)
+
+[27-May-2025 04:57:56 Europe/Berlin] Checking for duplicate email...
+[27-May-2025 04:57:56 Europe/Berlin] Checking for duplicate student ID...
+[27-May-2025 04:57:56 Europe/Berlin] Fetching current student data...
+[27-May-2025 04:57:56 Europe/Berlin] Processed subjects string: test, lols
+[27-May-2025 04:57:56 Europe/Berlin] Preparing to update student information...
+[27-May-2025 04:57:56 Europe/Berlin] Update parameters: Array
+(
+    [0] => Riza
+    [1] => Subida
+    [2] => thejust10academy@gmail.com
+    [3] => 0000032
+    [4] => 09261815461
+    [5] => albert
+    [6] => BSCOE
+    [7] => A12
+    [8] => test, lols
+    [9] => 30
+)
+
+[27-May-2025 04:57:56 Europe/Berlin] Changes made: sections
+[27-May-2025 04:57:56 Europe/Berlin] Update completed successfully
+[27-May-2025 05:02:26 Europe/Berlin] === Starting student update process ===
+[27-May-2025 05:02:26 Europe/Berlin] Time: 2025-05-27 05:02:26
+[27-May-2025 05:02:26 Europe/Berlin] Request Method: POST
+[27-May-2025 05:02:26 Europe/Berlin] Database connection established
+[27-May-2025 05:02:26 Europe/Berlin] POST Data received: Array
+(
+    [id] => 30
+    [first_name] => Riza
+    [last_name] => Subida
+    [email] => thejust10academy@gmail.com
+    [student_id] => 0000032
+    [contact] => 09261815461
+    [faculty_name] => albert
+    [course] => BSCOE
+    [sections] => A14
+    [subjects] => Array
+        (
+            [0] => test
+            [1] => lols
+        )
+
+    [update_student] => 
+)
+
+[27-May-2025 05:02:26 Europe/Berlin] Processed form data:
+[27-May-2025 05:02:26 Europe/Berlin] ID: 30
+[27-May-2025 05:02:26 Europe/Berlin] First Name: Riza
+[27-May-2025 05:02:26 Europe/Berlin] Last Name: Subida
+[27-May-2025 05:02:26 Europe/Berlin] Email: thejust10academy@gmail.com
+[27-May-2025 05:02:26 Europe/Berlin] Student ID: 0000032
+[27-May-2025 05:02:26 Europe/Berlin] Contact: 09261815461
+[27-May-2025 05:02:26 Europe/Berlin] Faculty: albert
+[27-May-2025 05:02:26 Europe/Berlin] Course: BSCOE
+[27-May-2025 05:02:26 Europe/Berlin] Sections: A14
+[27-May-2025 05:02:26 Europe/Berlin] Subjects: Array
+(
+    [0] => test
+    [1] => lols
+)
+
+[27-May-2025 05:02:26 Europe/Berlin] Checking for duplicate email...
+[27-May-2025 05:02:26 Europe/Berlin] Checking for duplicate student ID...
+[27-May-2025 05:02:26 Europe/Berlin] Fetching current student data...
+[27-May-2025 05:02:26 Europe/Berlin] Processed subjects string: test, lols
+[27-May-2025 05:02:26 Europe/Berlin] Preparing to update student information...
+[27-May-2025 05:02:26 Europe/Berlin] Update parameters: Array
+(
+    [0] => Riza
+    [1] => Subida
+    [2] => thejust10academy@gmail.com
+    [3] => 0000032
+    [4] => 09261815461
+    [5] => albert
+    [6] => BSCOE
+    [7] => A14
+    [8] => test, lols
+    [9] => 30
+)
+
+[27-May-2025 05:02:26 Europe/Berlin] Changes made: sections
+[27-May-2025 05:02:26 Europe/Berlin] Update completed successfully

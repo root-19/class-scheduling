@@ -32,12 +32,12 @@ class AuthController {
         }
 
         $subjects = isset($_POST['subjects']) ? $_POST['subjects'] : [];
-        $sections = isset($_POST['sections']) ? $_POST['sections'] : [];
+        $sections = isset($_POST['sections']) ? trim($_POST['sections'], '"') : '';
 
         $register = $this->user->register(
             $firstName, $lastName, $student_id, $contact, $email,
             $password, $role, $imageName, $subjects, $sections,
-            $prelim, $semester, $faculty,$course
+            $prelim, $semester, $faculty, $course
         );
 
         if ($register) {
@@ -67,7 +67,7 @@ class AuthController {
 
 
             // Recipients
-            $mail->setFrom('your_email@gmail.com', 'Your App Name');
+            $mail->setFrom('hperformanceexhaust@gmail.com', 'Your App Name');
             $mail->addAddress($email, $firstName);
 
             // Content
@@ -94,11 +94,15 @@ class AuthController {
     }
     
     public function login($email, $password) {
+        error_log("Login attempt for email: " . $email);
+        
         // Check in users table first
         $user = $this->user->findUserByEmail($email);
+        error_log("User table check result: " . ($user ? "Found" : "Not found"));
     
         if ($user) {
             if (!password_verify($password, $user['password'])) {
+                error_log("User password verification failed");
                 return ["success" => false, "message" => "Incorrect password."];
             }
     
@@ -108,8 +112,12 @@ class AuthController {
             $_SESSION['last_name'] = $user['last_name'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['course'] = $user['course'];
-            $_SESSION['sections'] = $user['sections']; // Ensure that this is being set correctly from the DB
+            
+            // Handle sections - remove any quotes and store as is
+            $_SESSION['sections'] = trim($user['sections'], '"');
+            
             $_SESSION['faculty'] = $user['faculty_name'];
+            error_log("User login successful, role: " . $user['role']);
     
             // Redirect based on role
             if ($user['role'] == "student") {
@@ -122,18 +130,25 @@ class AuthController {
         }
     
         // If no user is found, check the faculty table
+        error_log("Checking faculty table");
         $db = new Database();
         $conn = $db->connect();
         $stmt = $conn->prepare("SELECT * FROM faculty WHERE email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         $faculty = $stmt->fetch(\PDO::FETCH_ASSOC);
+        error_log("Faculty table check result: " . ($faculty ? "Found" : "Not found"));
     
         if ($faculty) {
+            error_log("Verifying faculty password");
+            error_log("Stored password hash: " . $faculty['password']);
+            
             if (!password_verify($password, $faculty['password'])) {
+                error_log("Faculty password verification failed");
                 return ["success" => false, "message" => "Incorrect password."];
             }
     
+            error_log("Faculty password verified successfully");
             session_start();
             $_SESSION['faculty_id'] = $faculty['id'];
             $_SESSION['faculty_name'] = $faculty['name']; 
@@ -143,6 +158,7 @@ class AuthController {
             exit();
         }
     
+        error_log("No matching user found in either table");
         return ["success" => false, "message" => "User not found."];
     }
 }    

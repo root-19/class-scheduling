@@ -21,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_faculty'])) {
     $contact = $_POST['contact'];
     $address = $_POST['address'];
     $subjects = $_POST['subjects'] ?? [];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $password = $_POST['password']; 
 
     if ($facultyController->addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password)) {
         header("Location: faculty.php");

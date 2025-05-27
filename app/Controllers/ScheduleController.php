@@ -39,6 +39,8 @@ class ScheduleController {
         $stmt->execute();
         $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        error_log("Raw schedules from database: " . print_r($schedules, true));
+
         $events = [];
         foreach ($schedules as $schedule) {
             if (empty($schedule['subject']) || $schedule['subject'] === 'No Class') {
@@ -68,7 +70,7 @@ class ScheduleController {
                     $eventDate = clone $endDate;
                 }
 
-                $events[] = [
+                $event = [
                     'id' => $schedule['id'] . '_' . ($i + 1),
                     'title' => $schedule['subject'] . ' (' . ($i + 1) . '/' . $numberOfMeetings . ')',
                     'start' => $eventDate->format('Y-m-d') . 'T' . $schedule['time_from'],
@@ -89,9 +91,13 @@ class ScheduleController {
                         'total_occurrences' => $numberOfMeetings
                     ]
                 ];
+                
+                error_log("Created event: " . print_r($event, true));
+                $events[] = $event;
             }
         }
 
+        error_log("Total events created: " . count($events));
         return $events;
     }
 

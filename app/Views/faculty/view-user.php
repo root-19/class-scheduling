@@ -200,25 +200,25 @@ include './layout/sidebar.php';
                         <label class="block">Prelim</label>
                         <input type="number" step="0.01" name="<?= $grade ? 'prelim' : 'new_grades[prelim]' ?>" 
                                min="0" max="100" value="<?= $grade ? $grade['prelim'] : '' ?>" 
-                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : 'required' ?>>
+                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : '' ?>>
                     </div>
                     <div>
                         <label class="block">Midterm</label>
                         <input type="number" step="0.01" name="<?= $grade ? 'midterm' : 'new_grades[midterm]' ?>" 
                                min="0" max="100" value="<?= $grade ? $grade['midterm'] : '' ?>" 
-                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : 'required' ?>>
+                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : '' ?>>
                     </div>
                     <div>
                         <label class="block">Final</label>
                         <input type="number" step="0.01" name="<?= $grade ? 'final' : 'new_grades[final]' ?>" 
                                min="0" max="100" value="<?= $grade ? $grade['final'] : '' ?>" 
-                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : 'required' ?>>
+                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : '' ?>>
                     </div>
                     <div>
                         <label class="block">Attendance (Days)</label>
                         <input type="number" name="<?= $grade ? 'attendance' : 'attendance' ?>" 
                                min="0" value="<?= $grade ? $grade['attendance'] : '0' ?>" 
-                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : 'required' ?>>
+                               class="w-full border px-2 py-1 rounded" <?= !$canEditGrades ? 'disabled' : '' ?>>
                     </div>
                 </div>
 

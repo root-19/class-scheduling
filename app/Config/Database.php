@@ -6,7 +6,7 @@ use PDOException;
 
 class Database {
     private $host = "localhost";
-    private $db_name = "scheduling";
+    private $db_name = "schedulings";
     private $username = "root";
     private $password = "";
     private $conn;

@@ -10,6 +10,46 @@ $conn = $db->connect();
 $auth = new AuthController();
 
 $message = '';
+$messageType = '';
+
+if (isset($_GET['success']) && $_GET['success'] == 1) {
+    $messageType = 'success';
+    $changes = isset($_GET['changes']) ? urldecode($_GET['changes']) : '';
+    $message = $changes ? "Successfully updated: $changes" : "Student information updated successfully";
+} elseif (isset($_GET['error'])) {
+    $messageType = 'error';
+    switch ($_GET['error']) {
+        case 'missing_fields':
+            $fields = isset($_GET['fields']) ? urldecode($_GET['fields']) : '';
+            $message = "Required fields are missing: $fields";
+            break;
+        case 'invalid_email':
+            $message = "Invalid email format";
+            break;
+        case 'duplicate_email':
+            $message = "Email address is already taken by another student";
+            break;
+        case 'duplicate_student_id':
+            $message = "Student ID is already taken by another student";
+            break;
+        case 'student_not_found':
+            $message = "Student not found";
+            break;
+        case 'database_error':
+            $message = "Database error occurred while updating student information";
+            break;
+        case 'exception':
+            $message = isset($_GET['message']) ? urldecode($_GET['message']) : "An error occurred";
+            break;
+        case 'fatal_error':
+            $message = "A system error occurred. Please contact support.";
+            break;
+        default:
+            $message = "An unknown error occurred";
+    }
+}
+
+error_log("Page loaded with message: $message (Type: $messageType)");
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -52,7 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch registered students
-$stmt = $conn->prepare("SELECT id, first_name, last_name, email, student_id, contact, image, subjects, sections, faculty, course FROM users WHERE role = 'student'");
+$stmt = $conn->prepare("
+    SELECT id, first_name, last_name, email, student_id, contact, image, 
+           subjects, sections, faculty, course, prelim, semester
+    FROM users 
+    WHERE role = 'student'
+");
 $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -86,8 +131,18 @@ unset($student); // best practice
 include './layout/sidebar.php';
 ?>
 
+<!-- Add SweetAlert2 CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+
 <div class="p-8 w-full bg-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto">
+        <?php if ($message): ?>
+            <div class="mb-4 p-4 rounded-lg <?= $messageType === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' ?>">
+                <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
+
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <!-- Header Section -->
             <div class="p-6 border-b border-gray-200">
@@ -131,7 +186,7 @@ include './layout/sidebar.php';
                                 }
                             }
                             ?>
-                            <tr class="hover:bg-gray-50 transition-colors">
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick='openModal(<?= json_encode($student) ?>)'>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['id']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($student['student_id']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -183,11 +238,18 @@ include './layout/sidebar.php';
         <div class="p-6 border-b border-gray-200 flex-shrink-0">
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-bold text-gray-800">Student Details</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="editStudent()" class="text-blue-600 hover:text-blue-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -267,13 +329,13 @@ include './layout/sidebar.php';
     </div>
 </div>
 
-<!-- Edit Grade Modal -->
-<div id="editGradeModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-800">Edit Grades</h2>
-                <button onclick="closeEditGradeModal()" class="text-gray-400 hover:text-gray-500">
+                <h2 class="text-xl font-bold text-gray-800">Edit Student Information</h2>
+                <button onclick="closeEditStudentModal()" class="text-gray-400 hover:text-gray-500">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -281,53 +343,86 @@ include './layout/sidebar.php';
             </div>
         </div>
 
-        <form id="editGradeForm" method="POST" action="update_grade.php" class="p-6 space-y-4">
-            <input type="hidden" id="edit_student_id" name="student_id">
-            <input type="hidden" id="edit_subject" name="subject">
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <input type="text" id="edit_subject_display" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg" readonly>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prelim</label>
-                <input type="number" name="prelim" id="edit_prelim" step="0.01" min="0" max="100" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Midterm</label>
-                <input type="number" name="midterm" id="edit_midterm" step="0.01" min="0" max="100" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Final</label>
-                <input type="number" name="final" id="edit_final" step="0.01" min="0" max="100" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Exam</label>
-                <input type="number" name="exam" id="edit_exam" step="0.01" min="0" max="100" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <form action="update_student.php" method="POST" class="p-6 overflow-y-auto">
+            <input type="hidden" id="edit_id" name="id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input type="text" id="edit_first_name" name="first_name" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input type="text" id="edit_last_name" name="last_name" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="edit_email" name="email" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Student ID</label>
+                    <input type="text" id="edit_student_id" name="student_id" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                    <input type="text" id="edit_contact" name="contact" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Faculty</label>
+                    <select id="edit_faculty" name="faculty_name" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <?php foreach ($faculties as $faculty): ?>
+                            <option value="<?= htmlspecialchars($faculty['name']) ?>">
+                                <?= htmlspecialchars($faculty['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Course</label>
+                    <input type="text" id="edit_course" name="course" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                    <input type="text" id="edit_sections" name="sections" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Attendance (Days)</label>
-                <input type="number" name="attendance" id="edit_attendance" min="0" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Subjects</label>
+                <div id="edit-subjects-container" class="space-y-2 p-4 border border-gray-200 rounded-lg">
+                    <?php
+                    $subjectStmt = $conn->query("SELECT * FROM subjects");
+                    while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                        echo '<div class="flex items-center space-x-2">
+                            <input type="checkbox" 
+                                   name="subjects[]" 
+                                   value="' . htmlspecialchars($subject['subject_name']) . '" 
+                                   id="edit_subject_' . $subject['id'] . '"
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="edit_subject_' . $subject['id'] . '" class="text-sm text-gray-700">
+                                ' . htmlspecialchars($subject['subject_name']) . '
+                            </label>
+                        </div>';
+                    }
+                    ?>
+                </div>
             </div>
 
-            <div class="flex items-center justify-end space-x-3 pt-4">
-                <button type="button" onclick="closeEditGradeModal()" 
+            <div class="flex justify-end mt-6 gap-3">
+                <button type="button" onclick="closeEditStudentModal()" 
                     class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                     Cancel
                 </button>
-                <button type="submit" 
+                <button type="submit" name="update_student"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Update Grades
+                    Save Changes
                 </button>
             </div>
         </form>
@@ -338,6 +433,7 @@ include './layout/sidebar.php';
 <script>
 let highestGradesChart = null;
 let lowestGradesChart = null;
+let currentStudent = null;
 
 function calculateAverageGrade(grade) {
     const prelim = parseFloat(grade.prelim) || 0;
@@ -345,24 +441,63 @@ function calculateAverageGrade(grade) {
     const final = parseFloat(grade.final) || 0;
     const exam = parseFloat(grade.exam) || 0;
     
-    // Calculate average if at least one grade exists
-    const grades = [prelim, midterm, final, exam].filter(g => g > 0);
-    return grades.length > 0 ? grades.reduce((a, b) => a + b, 0) / grades.length : 0;
+    // Count how many grades are actually present (non-zero)
+    const validGrades = [prelim, midterm, final, exam].filter(g => g > 0);
+    
+    // Return null if there aren't enough grades
+    if (validGrades.length === 0) return null;
+    
+    // Calculate average of existing grades
+    return validGrades.reduce((a, b) => a + b, 0) / validGrades.length;
 }
 
 function updateGradeCharts(grades) {
-    // Calculate average grades for each subject
-    const gradeData = grades.map(grade => ({
-        subject: grade.subject,
-        average: calculateAverageGrade(grade)
-    }));
+    // Calculate average grades for each subject, filtering out incomplete grades
+    const gradeData = grades
+        .map(grade => ({
+            subject: grade.subject,
+            average: calculateAverageGrade(grade)
+        }))
+        .filter(grade => grade.average !== null); // Remove subjects with no grades
+
+    // Get the chart containers
+    const highestChartsContainer = document.getElementById('highestGradesChart').closest('.bg-white');
+    const lowestChartsContainer = document.getElementById('lowestGradesChart').closest('.bg-white');
+
+    // Hide charts if there aren't at least 3 subjects with grades
+    if (gradeData.length < 3) {
+        highestChartsContainer.style.display = 'none';
+        lowestChartsContainer.style.display = 'none';
+        return; // Exit function if we don't have enough grades
+    }
 
     // Sort grades by average
     gradeData.sort((a, b) => b.average - a.average);
 
-    // Get top 3 highest and lowest
+    // Check if any grades are below 85
+    const hasLowGrades = gradeData.some(grade => grade.average < 85);
+    
+    // Hide charts if any grade is below 85
+    if (hasLowGrades) {
+        highestChartsContainer.style.display = 'none';
+        lowestChartsContainer.style.display = 'none';
+        return;
+    }
+
+    // Show charts if we have enough grades and all are 85 or above
+    highestChartsContainer.style.display = 'block';
+    lowestChartsContainer.style.display = 'block';
+
+    // Get exactly 3 highest and 3 lowest
     const highestGrades = gradeData.slice(0, 3);
     const lowestGrades = gradeData.slice(-3).reverse();
+
+    // Only proceed if we have exactly 3 grades for both charts
+    if (highestGrades.length !== 3 || lowestGrades.length !== 3) {
+        highestChartsContainer.style.display = 'none';
+        lowestChartsContainer.style.display = 'none';
+        return;
+    }
 
     // Destroy existing charts if they exist
     if (highestGradesChart) highestGradesChart.destroy();
@@ -420,6 +555,7 @@ function updateGradeCharts(grades) {
 }
 
 function openModal(student) {
+    currentStudent = student;
     document.getElementById('modalImage').src = `/uploads/${student.image}`;
     document.getElementById('modalFirstName').textContent = student.first_name;
     document.getElementById('modalLastName').textContent = student.last_name;
@@ -432,9 +568,7 @@ function openModal(student) {
     gradesBody.innerHTML = '';
 
     if (student.grades && student.grades.length > 0) {
-        // Update grade charts
         updateGradeCharts(student.grades);
-
         student.grades.forEach(grade => {
             const row = `<tr>
                 <td class="border px-4 py-2">${grade.subject}</td>
@@ -466,63 +600,195 @@ function openModal(student) {
     document.getElementById('viewModal').classList.remove('hidden');
 }
 
+function editStudent() {
+    // Populate the edit form
+    document.getElementById('edit_id').value = currentStudent.id;
+    document.getElementById('edit_first_name').value = currentStudent.first_name;
+    document.getElementById('edit_last_name').value = currentStudent.last_name;
+    document.getElementById('edit_email').value = currentStudent.email;
+    document.getElementById('edit_student_id').value = currentStudent.student_id;
+    document.getElementById('edit_contact').value = currentStudent.contact;
+    document.getElementById('edit_faculty').value = currentStudent.faculty;
+    document.getElementById('edit_course').value = currentStudent.course;
+    document.getElementById('edit_sections').value = currentStudent.sections;
+
+    // Set selected subjects
+    const studentSubjects = currentStudent.subjects ? currentStudent.subjects.split(',').map(s => s.trim()) : [];
+    document.querySelectorAll('#edit-subjects-container input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = studentSubjects.includes(checkbox.value);
+    });
+
+    // Hide view modal and show edit modal
+    document.getElementById('viewModal').classList.add('hidden');
+    document.getElementById('editStudentModal').classList.remove('hidden');
+}
+
+function closeEditStudentModal() {
+    document.getElementById('editStudentModal').classList.add('hidden');
+    document.getElementById('viewModal').classList.remove('hidden');
+}
+
 function closeModal() {
     document.getElementById('viewModal').classList.add('hidden');
 }
 
 function editGrade(gradeId, event) {
-    // Show the edit modal
-    document.getElementById('editGradeModal').classList.remove('hidden');
+    event.stopPropagation(); // Stop event from bubbling up to parent elements
     
     // Get the current row data
     const row = event.target.closest('tr');
     const cells = row.getElementsByTagName('td');
     
-    // Set the values in the edit form
-    document.getElementById('edit_subject_display').value = cells[0].textContent;
-    document.getElementById('edit_prelim').value = cells[1].textContent !== '-' ? cells[1].textContent : '';
-    document.getElementById('edit_midterm').value = cells[2].textContent !== '-' ? cells[2].textContent : '';
-    document.getElementById('edit_final').value = cells[3].textContent !== '-' ? cells[3].textContent : '';
-    document.getElementById('edit_exam').value = cells[4].textContent !== '-' ? cells[4].textContent : '';
-    document.getElementById('edit_attendance').value = cells[5].textContent.replace(' days', '');
-    
-    // Store the grade ID
-    document.getElementById('editGradeForm').setAttribute('data-grade-id', gradeId);
+    // Show edit form for the specific grade
+    Swal.fire({
+        title: 'Edit Grade',
+        html: `
+            <form id="editGradeForm" class="space-y-4">
+                <input type="hidden" id="edit_grade_id" value="${gradeId}">
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Subject</label>
+                    <input type="text" id="edit_subject_display" value="${cells[0].textContent}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" readonly>
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Prelim</label>
+                    <input type="number" id="edit_prelim" value="${cells[1].textContent !== '-' ? cells[1].textContent : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0" max="100">
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Midterm</label>
+                    <input type="number" id="edit_midterm" value="${cells[2].textContent !== '-' ? cells[2].textContent : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0" max="100">
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Final</label>
+                    <input type="number" id="edit_final" value="${cells[3].textContent !== '-' ? cells[3].textContent : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0" max="100">
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Exam</label>
+                    <input type="number" id="edit_exam" value="${cells[4].textContent !== '-' ? cells[4].textContent : ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0" max="100">
+                </div>
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-gray-700">Attendance (days)</label>
+                    <input type="number" id="edit_attendance" value="${cells[5].textContent.replace(' days', '')}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" min="0">
+                </div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Save Changes',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+            const formData = new FormData();
+            formData.append('action', 'edit');
+            formData.append('id', document.getElementById('edit_grade_id').value);
+            formData.append('prelim', document.getElementById('edit_prelim').value);
+            formData.append('midterm', document.getElementById('edit_midterm').value);
+            formData.append('final', document.getElementById('edit_final').value);
+            formData.append('exam', document.getElementById('edit_exam').value);
+            formData.append('attendance', document.getElementById('edit_attendance').value);
+
+            return fetch('../../../app/Controllers/GradeController.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to update grade');
+                }
+                return data;
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Grade has been updated successfully',
+                timer: 1500
+            }).then(() => {
+                location.reload();
+            });
+        }
+    }).catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.message || 'Failed to update grade'
+        });
+    });
 }
 
-// Handle form submission
-document.getElementById('editGradeForm').addEventListener('submit', function(e) {
+// Handle edit form submission
+document.getElementById('editStudentForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const formData = new FormData();
-    formData.append('action', 'edit');
-    formData.append('id', this.getAttribute('data-grade-id'));
-    formData.append('prelim', document.getElementById('edit_prelim').value);
-    formData.append('midterm', document.getElementById('edit_midterm').value);
-    formData.append('final', document.getElementById('edit_final').value);
-    formData.append('exam', document.getElementById('edit_exam').value);
-    formData.append('attendance', document.getElementById('edit_attendance').value);
+    const formData = new FormData(this);
+    formData.append('action', 'update');
 
-    fetch('../../../app/Controllers/GradeController.php', {
+    // Debug log all form data
+    console.log('Form data being sent:');
+    for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+    }
+
+    // Show loading alert
+    Swal.fire({
+        title: 'Updating...',
+        text: 'Please wait while we update the student information',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Debug log the request URL
+    console.log('Sending request to:', 'update_student.php');
+
+    fetch('update_student.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        // Debug log the raw response
+        console.log('Raw response:', response);
+        return response.json();
+    })
     .then(data => {
+        // Debug log the parsed data
+        console.log('Parsed response data:', data);
+        
         if (data.success) {
-            location.reload();
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message || 'Student information has been updated successfully.',
+                confirmButtonColor: '#3085d6'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload();
+                }
+            });
         } else {
-            alert('Error updating grades: ' + (data.message || 'Unknown error'));
+            console.error('Update failed:', data.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: data.message || 'Failed to update student information',
+                confirmButtonColor: '#d33'
+            });
         }
     })
     .catch(error => {
-        alert('Error saving grades');
+        // Debug log any errors
+        console.error('Fetch error:', error);
+        console.error('Error stack:', error.stack);
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'An unexpected error occurred while updating student information. Check console for details.',
+            confirmButtonColor: '#d33'
+        });
     });
 });
-
-function closeEditGradeModal() {
-    document.getElementById('editGradeModal').classList.add('hidden');
-}
 </script>
 
 <script>

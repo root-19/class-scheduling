@@ -39,7 +39,7 @@ class Faculty {
             }
             
             // Convert subjects array to comma-separated string
-            $subjectsString = !empty($subjectNames) ? implode(',', $subjectNames) : '';
+            $subjectsString = !empty($subjectNames) ? implode(', ', $subjectNames) : '';
             
             // Insert faculty member with subjects
             $stmt = $this->conn->prepare("INSERT INTO faculty (faculty_id, name, email, contact, address, subjects, password) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -64,7 +64,7 @@ class Faculty {
             }
             
             // Convert subjects array to comma-separated string
-            $subjectsString = !empty($subjectNames) ? implode(',', $subjectNames) : '';
+            $subjectsString = !empty($subjectNames) ? implode(', ', $subjectNames) : '';
             
             // Update faculty member with subjects
             $stmt = $this->conn->prepare("UPDATE faculty SET faculty_id = ?, name = ?, email = ?, contact = ?, address = ?, subjects = ? WHERE id = ?");
@@ -96,7 +96,8 @@ class Faculty {
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         
         if ($result && !empty($result['subjects'])) {
-            $subjectNames = explode(',', $result['subjects']);
+            // Split by comma and trim spaces
+            $subjectNames = array_map('trim', explode(',', $result['subjects']));
             $placeholders = str_repeat('?,', count($subjectNames) - 1) . '?';
             $stmt = $this->conn->prepare("SELECT * FROM subjects WHERE subject_name IN ($placeholders)");
             $stmt->execute($subjectNames);

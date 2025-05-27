@@ -28,8 +28,10 @@ class User {
         $stmt = $this->conn->prepare($query);
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $encodedSubjects = json_encode($subjects);
-        $encodedSections = json_encode($sections);
+        // Convert subjects array to comma-separated string
+        $subjectsStr = is_array($subjects) ? implode(', ', $subjects) : $subjects;
+        // Remove any quotes from sections
+        $sectionsStr = is_string($sections) ? trim($sections, '"') : $sections;
 
         $stmt->bindParam(':first_name', $firstName);
         $stmt->bindParam(':last_name', $lastName);
@@ -39,13 +41,12 @@ class User {
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':role', $role);
         $stmt->bindParam(':image', $imageName);
-        $stmt->bindParam(':subjects', $encodedSubjects);
-        $stmt->bindParam(':sections', $encodedSections);
+        $stmt->bindParam(':subjects', $subjectsStr);
+        $stmt->bindParam(':sections', $sectionsStr);
         $stmt->bindParam(':prelim', $prelim);
         $stmt->bindParam(':semester', $semester);
         $stmt->bindParam(':faculty', $faculty);
         $stmt->bindParam(':course', $course);
-
 
         return $stmt->execute();
     }
