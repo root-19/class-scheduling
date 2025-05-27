@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../Controllers/ScheduleController.php';
 require_once __DIR__ . '/../../Config/Database.php';
 
 use App\Controllers\ScheduleController;
-use App\Config\Database; // ✅ Make sure this comes before you use "new Database()"
+use App\Config\Database; 
 
 // Initialize schedule controller
 $scheduleController = new ScheduleController();
@@ -131,7 +131,6 @@ include "./layout/sidebar.php";
     </div>
     </div>
 
-    <!-- Form submission to backend -->
     <script>
 
 

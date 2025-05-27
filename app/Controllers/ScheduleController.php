@@ -127,26 +127,123 @@ class ScheduleController {
             ];
     
             try {
-                // Check for time conflicts
+                // Calculate the interval between meetings for the new schedule
+                $newStartDate = new DateTime($data['month_from']);
+                $newEndDate = new DateTime($data['month_to']);
+                $totalDays = $newStartDate->diff($newEndDate)->days;
+                $newInterval = floor($totalDays / ((int)$data['day_of_week'] - 1));
+
+                // Get existing schedules that might conflict
                 $query = "SELECT * FROM schedules WHERE 
+                    room = :room AND
+                    ((month_from <= :month_to AND month_to >= :month_from)) AND
                     ((time_from <= :time_from AND time_to > :time_from) OR
                     (time_from < :time_to AND time_to >= :time_to) OR
-                    (time_from >= :time_from AND time_to <= :time_to)) AND
-                    (room = :room OR faculty = :faculty)";
-                
+                    (time_from >= :time_from AND time_to <= :time_to))";
+
                 $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':room', $data['room']);
+                $stmt->bindParam(':month_from', $data['month_from']);
+                $stmt->bindParam(':month_to', $data['month_to']);
                 $stmt->bindParam(':time_from', $data['time_from']);
                 $stmt->bindParam(':time_to', $data['time_to']);
-                $stmt->bindParam(':room', $data['room']);
-                $stmt->bindParam(':faculty', $data['faculty']);
                 $stmt->execute();
                 
-                $conflicts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                if (!empty($conflicts)) {
+                $potentialConflicts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $hasConflict = false;
+
+                // For each potential conflict, check if actual meeting days overlap
+                foreach ($potentialConflicts as $existing) {
+                    $existingStartDate = new DateTime($existing['month_from']);
+                    $existingEndDate = new DateTime($existing['month_to']);
+                    $existingTotalDays = $existingStartDate->diff($existingEndDate)->days;
+                    $existingInterval = floor($existingTotalDays / ((int)$existing['day_of_week'] - 1));
+
+                    // Generate meeting dates for existing schedule
+                    $existingDates = [];
+                    $currentDate = clone $existingStartDate;
+                    for ($i = 0; $i < (int)$existing['day_of_week']; $i++) {
+                        $existingDates[] = $currentDate->format('Y-m-d');
+                        $currentDate->modify('+' . $existingInterval . ' days');
+                    }
+
+                    // Generate meeting dates for new schedule
+                    $newDates = [];
+                    $currentDate = clone $newStartDate;
+                    for ($i = 0; $i < (int)$data['day_of_week']; $i++) {
+                        $newDates[] = $currentDate->format('Y-m-d');
+                        $currentDate->modify('+' . $newInterval . ' days');
+                    }
+
+                    // Check for any overlapping dates
+                    $overlappingDates = array_intersect($existingDates, $newDates);
+                    if (!empty($overlappingDates)) {
+                        $hasConflict = true;
+                        break;
+                    }
+                }
+
+                if ($hasConflict) {
                     echo json_encode([
-                        'status' => 'error', 
-                        'message' => 'Schedule conflict detected! There is already a schedule at this time for either the room or faculty.'
+                        'status' => 'error',
+                        'message' => 'Schedule conflict detected! There is already a class scheduled in this room at this time on one or more of your meeting days.'
+                    ]);
+                    exit();
+                }
+
+                // Similar check for faculty conflicts
+                $query = "SELECT * FROM schedules WHERE 
+                    faculty = :faculty AND
+                    ((month_from <= :month_to AND month_to >= :month_from)) AND
+                    ((time_from <= :time_from AND time_to > :time_from) OR
+                    (time_from < :time_to AND time_to >= :time_to) OR
+                    (time_from >= :time_from AND time_to <= :time_to))";
+
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':faculty', $data['faculty']);
+                $stmt->bindParam(':month_from', $data['month_from']);
+                $stmt->bindParam(':month_to', $data['month_to']);
+                $stmt->bindParam(':time_from', $data['time_from']);
+                $stmt->bindParam(':time_to', $data['time_to']);
+                $stmt->execute();
+                
+                $potentialConflicts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $hasConflict = false;
+
+                foreach ($potentialConflicts as $existing) {
+                    $existingStartDate = new DateTime($existing['month_from']);
+                    $existingEndDate = new DateTime($existing['month_to']);
+                    $existingTotalDays = $existingStartDate->diff($existingEndDate)->days;
+                    $existingInterval = floor($existingTotalDays / ((int)$existing['day_of_week'] - 1));
+
+                    // Generate meeting dates for existing schedule
+                    $existingDates = [];
+                    $currentDate = clone $existingStartDate;
+                    for ($i = 0; $i < (int)$existing['day_of_week']; $i++) {
+                        $existingDates[] = $currentDate->format('Y-m-d');
+                        $currentDate->modify('+' . $existingInterval . ' days');
+                    }
+
+                    // Generate meeting dates for new schedule
+                    $newDates = [];
+                    $currentDate = clone $newStartDate;
+                    for ($i = 0; $i < (int)$data['day_of_week']; $i++) {
+                        $newDates[] = $currentDate->format('Y-m-d');
+                        $currentDate->modify('+' . $newInterval . ' days');
+                    }
+
+                    // Check for any overlapping dates
+                    $overlappingDates = array_intersect($existingDates, $newDates);
+                    if (!empty($overlappingDates)) {
+                        $hasConflict = true;
+                        break;
+                    }
+                }
+
+                if ($hasConflict) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'Faculty conflict detected! This faculty member is already scheduled at this time on one or more of your meeting days.'
                     ]);
                     exit();
                 }
@@ -156,24 +253,9 @@ class ScheduleController {
                 $newTo = new \DateTime($data['time_to']);
                 $newDuration = ($newTo->getTimestamp() - $newFrom->getTimestamp()) / 3600;
     
-                // Check existing total for the day for this faculty
-                $query = "SELECT time_from, time_to FROM schedules 
-                          WHERE faculty = :faculty";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':faculty', $data['faculty']);
-                $stmt->execute();
-                $existingSchedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-                $totalHours = 0;
-                foreach ($existingSchedules as $sched) {
-                    $from = new \DateTime($sched['time_from']);
-                    $to = new \DateTime($sched['time_to']);
-                    $hours = ($to->getTimestamp() - $from->getTimestamp()) / 3600;
-                    $totalHours += $hours;
-                }
-    
-                if (($totalHours + $newDuration) > 8) {
-                    echo json_encode(['status' => 'error', 'message' => 'Faculty can only have up to 8 hours of schedule per day']);
+                // The 8-hour check is per actual meeting day, so we don't need to change it
+                if ($newDuration > 8) {
+                    echo json_encode(['status' => 'error', 'message' => 'Faculty cannot have more than 8 hours of classes per day']);
                     exit();
                 }
     
