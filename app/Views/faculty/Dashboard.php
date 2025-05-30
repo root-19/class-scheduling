@@ -44,8 +44,43 @@ $totalStudents = $result['total'];
 $scheduleController = new ScheduleController();
 $schedules = $scheduleController->getSchedulesForUser($facultyName, null, null);
 
-// Calculate today's classes from $schedules
+// Count classes for today
+$totalClassesForToday = 0;
 $today = date('Y-m-d');
+$currentDayOfWeek = date('l'); // Get current day name (Monday, Tuesday, etc.)
+
+foreach ($schedules as $event) {
+    // Check if this is a recurring event for today's day of week
+    if (isset($event['day_of_week']) && $event['day_of_week'] === $currentDayOfWeek) {
+        // Check if today falls within the event's date range
+        $monthFrom = isset($event['month_from']) ? date('Y-m-d', strtotime($event['month_from'])) : null;
+        $monthTo = isset($event['month_to']) ? date('Y-m-d', strtotime($event['month_to'])) : null;
+        
+        if (($monthFrom === null || $today >= $monthFrom) && ($monthTo === null || $today <= $monthTo)) {
+            $totalClassesForToday++;
+        }
+    }
+    // Also check for single-day events scheduled for today
+    elseif (isset($event['start']) && date('Y-m-d', strtotime($event['start'])) === $today) {
+        $totalClassesForToday++;
+    }
+}
+
+// Debug information
+error_log('Today\'s Date: ' . $today);
+error_log('Current Day of Week: ' . $currentDayOfWeek);
+error_log('Total Classes Found: ' . $totalClassesForToday);
+error_log('Schedule Data: ' . print_r($schedules, true));
+
+// Count total classes based on actual calendar dates
+$totalClassesCount = 0;
+foreach ($schedules as $event) {
+    if (isset($event['start']) && !empty($event['start'])) {
+        $totalClassesCount++;
+    }
+}
+
+// Calculate today's classes
 $todayClassesCount = 0;
 foreach ($schedules as $event) {
     if (isset($event['start']) && $event['start'] === $today) {
@@ -93,7 +128,7 @@ include './layout/sidebar.php';
                     </div>
                 </div>
 
-                <!-- Today's Classes Card -->
+                <!-- Classes Count Card -->
                 <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100">
                     <div class="flex items-center">
                         <div class="p-4 bg-violet-50 rounded-xl">
@@ -102,8 +137,19 @@ include './layout/sidebar.php';
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <h2 class="text-gray-500 text-sm font-medium">Today's Classes</h2>
-                            <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo $todayClassesCount; ?></p>
+                            <h2 class="text-gray-500 text-sm font-medium">Classes Today (<?php echo date('F d, Y'); ?>)</h2>
+                            <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo $totalClassesForToday; ?></p>
+                            <?php if (isset($_SESSION['debug']) && $_SESSION['debug']): ?>
+                            <div class="mt-2 text-xs text-gray-500">
+                                <pre><?php 
+                                    foreach ($schedules as $event) {
+                                        if (isset($event['month_to']) && $event['month_to'] === $today) {
+                                            echo "Class End Date: " . $event['month_to'] . "\n";
+                                        }
+                                    }
+                                ?></pre>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

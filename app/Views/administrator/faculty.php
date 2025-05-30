@@ -22,8 +22,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_faculty'])) {
     $address = $_POST['address'];
     $subjects = $_POST['subjects'] ?? [];
     $password = $_POST['password']; 
+    $confirmPassword = $_POST['confirm_password'];
 
-    if ($facultyController->addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password)) {
+    // Check if passwords match
+    if ($password !== $confirmPassword) {
+        $error = "Passwords do not match. Please try again.";
+    } else if ($facultyController->addFaculty($facultyId, $name, $email, $contact, $address, $subjects, $password)) {
         header("Location: faculty.php");
         exit();
     } else {
@@ -83,6 +87,7 @@ $facultyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 include './layout/sidebar.php';
 ?>
 <script src="../../Resources/js/modal-faculty.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="p-8 w-full bg-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto">
@@ -125,6 +130,17 @@ include './layout/sidebar.php';
                                     <td class="px-6 py-4 text-sm text-gray-900"><?php echo htmlspecialchars($faculty['address']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center space-x-2">
+                                            <button 
+                                                onclick="viewPerformance(
+                                                    '<?php echo $faculty['id']; ?>', 
+                                                    '<?php echo addslashes($faculty['name']); ?>'
+                                                )" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                                </svg>
+                                                Performance
+                                            </button>
                                             <button 
                                                 onclick="editFaculty(
                                                     <?php echo $faculty['id']; ?>, 
@@ -291,6 +307,12 @@ include './layout/sidebar.php';
                         <input type="password" name="password" required 
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
+
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <input type="password" name="confirm_password" required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
@@ -395,7 +417,105 @@ include './layout/sidebar.php';
     </div>
 </div>
 
+<!-- Performance Modal -->
+<div id="performanceModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800">Faculty Performance</h2>
+            <button onclick="closeModal('performanceModal')" class="text-gray-400 hover:text-gray-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="overflow-y-auto flex-grow p-6">
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2" id="facultyName"></h3>
+            </div>
+
+            <!-- Performance Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-blue-700 mb-2">Teaching Effectiveness Score</h4>
+                    <p class="text-2xl font-bold text-blue-800" id="teachingScore">-</p>
+                    <p class="text-xs text-blue-600 mt-1">Based on multiple factors</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-green-700 mb-2">Student Progress</h4>
+                    <p class="text-2xl font-bold text-green-800" id="studentProgress">-</p>
+                    <p class="text-xs text-green-600 mt-1">Average improvement</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-purple-700 mb-2">Attendance Rate</h4>
+                    <p class="text-2xl font-bold text-purple-800" id="attendanceRate">-</p>
+                    <p class="text-xs text-purple-600 mt-1">Overall attendance</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-orange-700 mb-2">Pass Rate</h4>
+                    <p class="text-2xl font-bold text-orange-800" id="passRate">-</p>
+                    <p class="text-xs text-orange-600 mt-1">Students passing</p>
+                </div>
+            </div>
+
+            <!-- Additional Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Total Students</h4>
+                    <p class="text-xl font-bold text-gray-800" id="totalStudents">-</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Excellence Rate</h4>
+                    <p class="text-xl font-bold text-gray-800" id="studentsAbove85">-</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Average Grade</h4>
+                    <p class="text-xl font-bold text-gray-800" id="avgPerformance">-</p>
+                </div>
+            </div>
+
+            <!-- Performance Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h4 class="text-md font-medium text-gray-700 mb-3">Subject Performance Trends</h4>
+                    <canvas id="subjectPerformanceChart"></canvas>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h4 class="text-md font-medium text-gray-700 mb-3">Student Progress Distribution</h4>
+                    <canvas id="gradeDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Subject-wise Performance Table -->
+            <div class="mt-6">
+                <h4 class="text-md font-medium text-gray-700 mb-3">Detailed Subject Analysis</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prelim Avg</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Midterm Avg</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Final Avg</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Improvement</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pass Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectPerformanceTable" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let subjectPerformanceChart = null;
+let gradeDistributionChart = null;
+
 function addSubjectField() {
     const container = document.getElementById('subjects-container');
     const newEntry = document.createElement('div');
@@ -500,5 +620,158 @@ function editFaculty(id, facultyId, name, email, contact, address, subjects) {
     }
 
     openModal('editFacultyModal');
+}
+
+function viewPerformance(facultyId, facultyName) {
+    document.getElementById('facultyName').textContent = facultyName;
+    
+    // Reset charts if they exist
+    if (subjectPerformanceChart) {
+        subjectPerformanceChart.destroy();
+    }
+    if (gradeDistributionChart) {
+        gradeDistributionChart.destroy();
+    }
+
+    // Show loading state
+    document.getElementById('teachingScore').textContent = 'Loading...';
+    document.getElementById('studentProgress').textContent = 'Loading...';
+    document.getElementById('attendanceRate').textContent = 'Loading...';
+    document.getElementById('passRate').textContent = 'Loading...';
+    document.getElementById('totalStudents').textContent = 'Loading...';
+    document.getElementById('studentsAbove85').textContent = 'Loading...';
+    document.getElementById('avgPerformance').textContent = 'Loading...';
+    document.getElementById('subjectPerformanceTable').innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center">Loading...</td></tr>';
+
+    // Fetch performance data
+    fetch(`../../Controllers/get-faculty-performance.php?faculty_id=${facultyId}`)
+        .then(response => response.json())
+        .then(response => {
+            if (response.success) {
+                const data = response.data;
+                
+                // Update statistics
+                document.getElementById('teachingScore').textContent = data.teachingEffectiveness + '%';
+                document.getElementById('studentProgress').textContent = (data.averageProgress >= 0 ? '+' : '') + data.averageProgress + '%';
+                document.getElementById('attendanceRate').textContent = data.overallAttendanceRate + '%';
+                document.getElementById('passRate').textContent = data.overallPassRate + '%';
+                document.getElementById('totalStudents').textContent = data.totalStudents;
+                document.getElementById('studentsAbove85').textContent = `${data.studentsAbove85Percentage}% (${data.studentsAbove85}/${data.totalStudents})`;
+                document.getElementById('avgPerformance').textContent = data.overallAverage + '%';
+
+                // Update subject performance table
+                const tableBody = document.getElementById('subjectPerformanceTable');
+                tableBody.innerHTML = '';
+                
+                data.subjectPerformance.forEach(subject => {
+                    const row = document.createElement('tr');
+                    const improvementClass = subject.improvement >= 0 ? 'text-green-600' : 'text-red-600';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.subject}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.prelimAvg}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.midtermAvg}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.finalAvg}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ${improvementClass}">
+                            ${(subject.improvement >= 0 ? '+' : '') + subject.improvement}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.passRate}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${subject.attendanceRate}%</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Create Subject Performance Chart
+                const subjectCtx = document.getElementById('subjectPerformanceChart').getContext('2d');
+                subjectPerformanceChart = new Chart(subjectCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.subjectPerformance.map(s => s.subject),
+                        datasets: [{
+                            label: 'Prelim',
+                            data: data.subjectPerformance.map(s => s.prelimAvg),
+                            borderColor: 'rgb(59, 130, 246)',
+                            tension: 0.1
+                        }, {
+                            label: 'Midterm',
+                            data: data.subjectPerformance.map(s => s.midtermAvg),
+                            borderColor: 'rgb(16, 185, 129)',
+                            tension: 0.1
+                        }, {
+                            label: 'Final',
+                            data: data.subjectPerformance.map(s => s.finalAvg),
+                            borderColor: 'rgb(245, 158, 11)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+
+                // Create Progress Distribution Chart
+                const gradeCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+                const progressData = data.subjectPerformance.reduce((acc, subject) => {
+                    if (subject.improvement >= 15) acc['Excellent (>15%)']++;
+                    else if (subject.improvement >= 10) acc['Good (10-15%)']++;
+                    else if (subject.improvement >= 5) acc['Fair (5-10%)']++;
+                    else if (subject.improvement >= 0) acc['Minimal (0-5%)']++;
+                    else acc['Needs Improvement (<0%)']++;
+                    return acc;
+                }, {
+                    'Excellent (>15%)': 0,
+                    'Good (10-15%)': 0,
+                    'Fair (5-10%)': 0,
+                    'Minimal (0-5%)': 0,
+                    'Needs Improvement (<0%)': 0
+                });
+
+                gradeDistributionChart = new Chart(gradeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(progressData),
+                        datasets: [{
+                            data: Object.values(progressData),
+                            backgroundColor: [
+                                'rgba(34, 197, 94, 0.5)',
+                                'rgba(59, 130, 246, 0.5)',
+                                'rgba(168, 85, 247, 0.5)',
+                                'rgba(234, 179, 8, 0.5)',
+                                'rgba(239, 68, 68, 0.5)'
+                            ],
+                            borderColor: [
+                                'rgb(34, 197, 94)',
+                                'rgb(59, 130, 246)',
+                                'rgb(168, 85, 247)',
+                                'rgb(234, 179, 8)',
+                                'rgb(239, 68, 68)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            } else {
+                alert('Failed to load performance data: ' + (response.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while fetching performance data');
+        });
+
+    openModal('performanceModal');
 }
 </script>

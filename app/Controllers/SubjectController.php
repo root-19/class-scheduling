@@ -21,15 +21,22 @@ class SubjectController {
             $subject_names = $_POST['subject_name'];
             $descriptions = $_POST['description'];
             $units = $_POST['unit'];
-            $this->subject->addSubject($subject_names, $descriptions, $units);
-            header("Location: dashboard.php");
+            
+            if ($this->subject->addSubject($subject_names, $descriptions, $units)) {
+                header("Location: subject-list.php?success=1");
+            } else {
+                header("Location: subject-list.php?error=1");
+            }
             exit();
         }
     
         if (isset($_GET['delete'])) {
             $id = $_GET['delete'];
-            $this->subject->deleteSubject($id);
-            header("Location: dashboard.php");
+            if ($this->subject->deleteSubject($id)) {
+                header("Location: subject-list.php?success=2");
+            } else {
+                header("Location: subject-list.php?error=2");
+            }
             exit();
         }
     }

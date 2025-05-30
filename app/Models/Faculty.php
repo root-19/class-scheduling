@@ -54,21 +54,21 @@ class Faculty {
     // Update faculty
     public function updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects) {
         try {
-            // Get subject names from IDs
-            $subjectNames = [];
+            // Get subject names from IDs and store both IDs and names
+            $subjectData = [];
             if (!empty($subjects)) {
                 $placeholders = str_repeat('?,', count($subjects) - 1) . '?';
-                $stmt = $this->conn->prepare("SELECT subject_name FROM subjects WHERE id IN ($placeholders)");
+                $stmt = $this->conn->prepare("SELECT id, subject_name FROM subjects WHERE id IN ($placeholders)");
                 $stmt->execute($subjects);
-                $subjectNames = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+                $subjectData = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
             
-            // Convert subjects array to comma-separated string
-            $subjectsString = !empty($subjectNames) ? implode(', ', $subjectNames) : '';
+            // Store both IDs and names in JSON format for better data integrity
+            $subjectsJson = json_encode($subjectData);
             
             // Update faculty member with subjects
             $stmt = $this->conn->prepare("UPDATE faculty SET faculty_id = ?, name = ?, email = ?, contact = ?, address = ?, subjects = ? WHERE id = ?");
-            return $stmt->execute([$facultyId, $name, $email, $contact, $address, $subjectsString, $id]);
+            return $stmt->execute([$facultyId, $name, $email, $contact, $address, $subjectsJson, $id]);
         } catch (\PDOException $e) {
             error_log("Error updating faculty: " . $e->getMessage());
             return false;
@@ -96,12 +96,23 @@ class Faculty {
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         
         if ($result && !empty($result['subjects'])) {
-            // Split by comma and trim spaces
-            $subjectNames = array_map('trim', explode(',', $result['subjects']));
-            $placeholders = str_repeat('?,', count($subjectNames) - 1) . '?';
-            $stmt = $this->conn->prepare("SELECT * FROM subjects WHERE subject_name IN ($placeholders)");
-            $stmt->execute($subjectNames);
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            try {
+                // Decode the JSON data
+                $subjectData = json_decode($result['subjects'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($subjectData)) {
+                    return $subjectData;
+                }
+                
+                // Fallback for old comma-separated format
+                $subjectNames = array_map('trim', explode(',', $result['subjects']));
+                $placeholders = str_repeat('?,', count($subjectNames) - 1) . '?';
+                $stmt = $this->conn->prepare("SELECT * FROM subjects WHERE subject_name IN ($placeholders)");
+                $stmt->execute($subjectNames);
+                return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            } catch (\Exception $e) {
+                error_log("Error getting faculty subjects: " . $e->getMessage());
+                return [];
+            }
         }
         return [];
     }

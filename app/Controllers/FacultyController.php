@@ -28,6 +28,8 @@ class FacultyController {
         return $this->facultyModel->updateFaculty($id, $facultyId, $name, $email, $contact, $address, $subjects);
     }
 
+
+    
     public function deleteFaculty($id) {
         return $this->facultyModel->deleteFaculty($id);
     }

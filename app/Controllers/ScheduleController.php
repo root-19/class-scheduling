@@ -133,6 +133,36 @@ class ScheduleController {
                 $totalDays = $newStartDate->diff($newEndDate)->days;
                 $newInterval = floor($totalDays / ((int)$data['day_of_week'] - 1));
 
+                // Calculate duration of new schedule
+                $newFrom = new \DateTime($data['time_from']);
+                $newTo = new \DateTime($data['time_to']);
+                $newDuration = ($newTo->getTimestamp() - $newFrom->getTimestamp()) / 3600;
+
+                // Check existing total for the day for this faculty
+                $query = "SELECT time_from, time_to FROM schedules 
+                         WHERE faculty = :faculty AND month_from = :month_from";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':faculty', $data['faculty']);
+                $stmt->bindParam(':month_from', $data['month_from']);
+                $stmt->execute();
+                $existingSchedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $totalHours = 0;
+                foreach ($existingSchedules as $sched) {
+                    $from = new \DateTime($sched['time_from']);
+                    $to = new \DateTime($sched['time_to']);
+                    $hours = ($to->getTimestamp() - $from->getTimestamp()) / 3600;
+                    $totalHours += $hours;
+                }
+
+                if (($totalHours + $newDuration) > 8) {
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'Faculty cannot have more than 8 hours of classes per day'
+                    ]);
+                    exit();
+                }
+
                 // Get existing schedules that might conflict
                 $query = "SELECT * FROM schedules WHERE 
                     room = :room AND
@@ -169,7 +199,7 @@ class ScheduleController {
 
                     // Generate meeting dates for new schedule
                     $newDates = [];
-                    $currentDate = clone $newStartDate;
+                    $currentDate = clone $newFrom;
                     for ($i = 0; $i < (int)$data['day_of_week']; $i++) {
                         $newDates[] = $currentDate->format('Y-m-d');
                         $currentDate->modify('+' . $newInterval . ' days');
@@ -226,7 +256,7 @@ class ScheduleController {
 
                     // Generate meeting dates for new schedule
                     $newDates = [];
-                    $currentDate = clone $newStartDate;
+                    $currentDate = clone $newFrom;
                     for ($i = 0; $i < (int)$data['day_of_week']; $i++) {
                         $newDates[] = $currentDate->format('Y-m-d');
                         $currentDate->modify('+' . $newInterval . ' days');
@@ -248,17 +278,6 @@ class ScheduleController {
                     exit();
                 }
 
-                // Calculate duration of new schedule
-                $newFrom = new \DateTime($data['time_from']);
-                $newTo = new \DateTime($data['time_to']);
-                $newDuration = ($newTo->getTimestamp() - $newFrom->getTimestamp()) / 3600;
-    
-                // The 8-hour check is per actual meeting day, so we don't need to change it
-                if ($newDuration > 8) {
-                    echo json_encode(['status' => 'error', 'message' => 'Faculty cannot have more than 8 hours of classes per day']);
-                    exit();
-                }
-    
                 // Proceed to add schedule
                 if ($this->scheduleModel->addSchedule($data)) {
                     echo json_encode(['status' => 'success', 'message' => 'Schedule added successfully']);

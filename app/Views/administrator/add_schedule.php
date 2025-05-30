@@ -21,10 +21,19 @@ $facultyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch subjects list
 $subjectsList = [];
+
+
 $query = "SELECT id, subject_name FROM subjects";
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $subjectsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch courses list
+$coursesList = [];
+$query = "SELECT id, course_name, description FROM course";
+$stmt = $conn->prepare($query);
+$stmt->execute();
+$coursesList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include "./layout/sidebar.php";
 ?>
@@ -108,19 +117,11 @@ include "./layout/sidebar.php";
 <label class="block mb-2 font-medium text-gray-700">Course</label>
 <select name="course" required class="w-full px-4 py-2 border rounded-lg focus:ring">
   <option value="">Select Course</option>
-  <option value="BSIT">BSIT – Bachelor of Science in Information Technology</option>
-  <option value="BSEEE">BSEEE – Bachelor of Science in Electronic Engineering</option>
-  <option value="BSCOE">BSCOE – Bachelor of Science in Computer Engineering</option>
-  <option value="BSTM">BSTM – Bachelor of Science in Tourism Management</option>
-  <option value="BSCS">BSCS – Bachelor of Science in Computer Science</option>
-  <option value="BSHM">BSHM – Bachelor of Science in Hospitality Management</option>
-  <option value="BEED">BEED – Bachelor of Elementary Education</option>
-  <option value="BSED - English">BSED - English – Bachelor of Secondary Education</option>
-  <option value="BSBA - Financial Management">BSBA - Financial Management – Bachelor of Science in Business Administration</option>
-  <option value="BSED - Mathematics">BSED - Mathematics – Bachelor of Secondary Education</option>
-  <option value="BSED - Social Studies">BSED - Social Studies – Bachelor of Secondary Education</option>
-  <option value="BSBA - Marketing Management">BSBA - Marketing Management – Bachelor of Science in Business Administration</option>
-  <option value="BSCRM">BSCRM – Bachelor of Science in Criminology</option>
+  <?php foreach ($coursesList as $course): ?>
+    <option value="<?= htmlspecialchars($course['course_name']) ?>">
+      <?= htmlspecialchars($course['course_name']) ?> – <?= htmlspecialchars($course['description']) ?>
+    </option>
+  <?php endforeach; ?>
 </select>
     <input type="text" name="section" placeholder="Section" required class="w-full p-2 border rounded">
     <div class="flex justify-end space-x-2">

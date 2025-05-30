@@ -35,13 +35,44 @@ if (!isset($_SESSION['faculty_name'])) {
 $facultyStmt = $conn->prepare("SELECT subjects FROM faculty WHERE name = ?");
 $facultyStmt->execute([$_SESSION['faculty_name']]);
 $facultySubjects = $facultyStmt->fetch(PDO::FETCH_ASSOC);
-$facultyAssignedSubjects = $facultySubjects ? explode(',', $facultySubjects['subjects']) : [];
+
+// Parse faculty subjects from JSON
+$facultyAssignedSubjects = [];
+if ($facultySubjects && !empty($facultySubjects['subjects'])) {
+    $subjectData = json_decode($facultySubjects['subjects'], true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($subjectData)) {
+        $facultyAssignedSubjects = array_column($subjectData, 'subject_name');
+    } else {
+        // Fallback for old format
+        $facultyAssignedSubjects = array_map('trim', explode(',', $facultySubjects['subjects']));
+    }
+}
 
 // Get student's assigned subjects
 $studentSubjectsStmt = $conn->prepare("SELECT subjects FROM users WHERE id = ?");
 $studentSubjectsStmt->execute([$id]);
 $studentSubjects = $studentSubjectsStmt->fetch(PDO::FETCH_ASSOC);
-$studentAssignedSubjects = $studentSubjects ? explode(',', $studentSubjects['subjects']) : [];
+
+// Parse student subjects
+$studentAssignedSubjects = [];
+if ($studentSubjects && !empty($studentSubjects['subjects'])) {
+    $studentSubjectData = json_decode($studentSubjects['subjects'], true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($studentSubjectData)) {
+        $studentAssignedSubjects = array_column($studentSubjectData, 'subject_name');
+    } else {
+        // Fallback for old format
+        $studentAssignedSubjects = array_map('trim', explode(',', $studentSubjects['subjects']));
+    }
+}
+
+// Helper function to normalize subject names for comparison
+function normalizeSubjectName($subject) {
+    return strtolower(trim($subject));
+}
+
+// Normalize all subject arrays
+$facultyAssignedSubjects = array_map('normalizeSubjectName', $facultyAssignedSubjects);
+$studentAssignedSubjects = array_map('normalizeSubjectName', $studentAssignedSubjects);
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentId = $_POST['student_id'] ?? $id;
 
     if ($action === 'add') {
-        $subject = trim($_POST['subject'] ?? '');
+        $subject = normalizeSubjectName($_POST['subject'] ?? '');
         $grades = $_POST['new_grades'] ?? [];
         $attendance = $_POST['attendance'] ?? 0;
 
@@ -91,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'edit') {
         $gradeId = $_POST['grade_id'];
-        $subject = trim($_POST['subject'] ?? '');
+        $subject = normalizeSubjectName($_POST['subject'] ?? '');
         $attendance = $_POST['attendance'] ?? 0;
         
         // Check if faculty is assigned to this subject AND student is also assigned to this subject
@@ -117,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete') {
         $gradeId = $_POST['grade_id'];
-        $subject = trim($_POST['subject'] ?? '');
+        $subject = normalizeSubjectName($_POST['subject'] ?? '');
         
         // Check if faculty is assigned to this subject AND student is also assigned to this subject
         if (!in_array($subject, $facultyAssignedSubjects)) {
@@ -160,39 +191,31 @@ include './layout/sidebar.php';
     <!-- Student's Subjects & Grades -->
     <h2 class="text-xl font-semibold mb-4">Student's Subjects & Grades</h2>
 
-    <?php
-    // Get student's assigned subjects
-    $subjectsStmt = $conn->prepare("SELECT subjects FROM users WHERE id = ?");
-    $subjectsStmt->execute([$id]);
-    $studentSubjects = $subjectsStmt->fetch(PDO::FETCH_ASSOC);
-    $subjects = explode(',', $studentSubjects['subjects']);
-    ?>
-
-    <?php if (!empty($subjects) && $subjects[0] !== ''): ?>
-        <?php foreach ($subjects as $subject): ?>
+    <?php if (!empty($studentAssignedSubjects)): ?>
+        <?php foreach ($studentAssignedSubjects as $subject): ?>
             <?php
-            $trimmedSubject = trim($subject);
+            $normalizedSubject = normalizeSubjectName($subject);
             // Check if grades exist for this subject
             $gradeStmt = $conn->prepare("SELECT * FROM grades WHERE student_id = ? AND subject = ?");
-            $gradeStmt->execute([$id, $trimmedSubject]);
+            $gradeStmt->execute([$id, $normalizedSubject]);
             $grade = $gradeStmt->fetch(PDO::FETCH_ASSOC);
             
             // Check if faculty is assigned to this subject AND student is also assigned to this subject
-            $isFacultyAssigned = in_array($trimmedSubject, $facultyAssignedSubjects);
-            $isStudentAssigned = in_array($trimmedSubject, $studentAssignedSubjects);
+            $isFacultyAssigned = in_array($normalizedSubject, $facultyAssignedSubjects);
+            $isStudentAssigned = in_array($normalizedSubject, $studentAssignedSubjects);
             $canEditGrades = $isFacultyAssigned && $isStudentAssigned;
             ?>
             
             <form method="POST" class="mb-4 p-4 border rounded shadow">
                 <input type="hidden" name="student_id" value="<?= $id ?>">
                 <input type="hidden" name="action" value="<?= $grade ? 'edit' : 'add' ?>">
-                <input type="hidden" name="subject" value="<?= htmlspecialchars($trimmedSubject) ?>">
+                <input type="hidden" name="subject" value="<?= htmlspecialchars($normalizedSubject) ?>">
                 <?php if ($grade): ?>
                     <input type="hidden" name="grade_id" value="<?= $grade['id'] ?>">
                 <?php endif; ?>
 
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-bold"><?= htmlspecialchars($trimmedSubject) ?></h3>
+                    <h3 class="text-lg font-bold"><?= htmlspecialchars($normalizedSubject) ?></h3>
                 </div>
 
                 <div class="grid grid-cols-4 gap-4">

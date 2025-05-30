@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $student_id = $_POST['student_id'] ?? '';
     $contact = $_POST['contact'] ?? '';
     $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
     $prelim = $_POST['prelim'] ?? '';
     $semester = $_POST['semester'] ?? '';
     $sections = $_POST['sections'] ?? '';
@@ -29,7 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate that at least one faculty is selected
     if (empty($_POST['faculty_name'])) {
         $message = "Please select at least one faculty";
-    } else {
+    } 
+    // Validate that passwords match
+    else if ($password !== $confirmPassword) {
+        $message = "Passwords do not match";
+    }
+    else {
         // Call register method with all required parameters
         $result = $auth->register(
             $firstName,
@@ -94,99 +100,95 @@ include './layout/sidebar.php';
         <?php if ($message): ?>
             <p class="text-red-500 text-center"><?= $message ?></p>
         <?php endif; ?>
-      <!-- Registration Form -->
-<div class="bg-white shadow-lg rounded-lg p-6 mt-8">
-    <?php if ($message): ?>
-        <p class="text-red-500 text-center"><?= $message ?></p>
-    <?php endif; ?>
-    <form action="" method="POST" class="space-y-4" enctype="multipart/form-data">
-        <div class="space-y-2">
-            <label class="block font-medium text-gray-700">Select Faculties (Multiple Selection)</label>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <?php foreach ($faculties as $faculty): ?>
-                    <div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
-                        <input type="checkbox" 
-                               name="faculty_name[]" 
-                               value="<?= htmlspecialchars($faculty['name']) ?>" 
-                               id="faculty_<?= $faculty['id'] ?>"
-                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="faculty_<?= $faculty['id'] ?>" class="text-sm text-gray-700">
-                            <?= htmlspecialchars($faculty['name']) ?>
-                        </label>
-                    </div>
-                <?php endforeach; ?>
+        <form action="" method="POST" class="space-y-4" enctype="multipart/form-data">
+            <div class="space-y-2">
+                <label class="block font-medium text-gray-700">Select Faculties (Multiple Selection)</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <?php foreach ($faculties as $faculty): ?>
+                        <div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
+                            <input type="checkbox" 
+                                   name="faculty_name[]" 
+                                   value="<?= htmlspecialchars($faculty['name']) ?>" 
+                                   id="faculty_<?= $faculty['id'] ?>"
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="faculty_<?= $faculty['id'] ?>" class="text-sm text-gray-700">
+                                <?= htmlspecialchars($faculty['name']) ?>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
-        </div>
 
-        <input type="text" name="first_name" placeholder="First Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="text" name="last_name" placeholder="Last Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="text" name="student_id" placeholder="Student ID" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="text" name="sections" placeholder="Section" class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <!-- Dropdown for Prelim -->
-<label class="block mb-2 font-medium text-gray-700">Period</label>
-<select name="prelim" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-  <option value="">Select Period</option>
-  <option value="Prelim">Prelim</option>
-  <option value="Midterm">Midterm</option>
-  <option value="Finals">Finals</option>
-</select>
+            <input type="text" name="first_name" placeholder="First Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="text" name="last_name" placeholder="Last Name" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="text" name="student_id" placeholder="Student ID" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="text" name="sections" placeholder="Section" class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <!-- Dropdown for Prelim -->
+    <label class="block mb-2 font-medium text-gray-700">Period</label>
+    <select name="prelim" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+      <option value="">Select Period</option>
+      <option value="Prelim">Prelim</option>
+      <option value="Midterm">Midterm</option>
+      <option value="Finals">Finals</option>
+    </select>
 
-<!-- Dropdown for Semester -->
-<label class="block mt-4 mb-2 font-medium text-gray-700">Semester</label>
-<select name="semester" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-  <option value="">Select Semester</option>
-  <option value="1st Semester">1st Semester</option>
-  <option value="2nd Semester">2nd Semester</option>
-  <!-- <option value="Summer">Summer</option> -->
-</select>
+    <!-- Dropdown for Semester -->
+    <label class="block mt-4 mb-2 font-medium text-gray-700">Semester</label>
+    <select name="semester" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+      <option value="">Select Semester</option>
+      <option value="1st Semester">1st Semester</option>
+      <option value="2nd Semester">2nd Semester</option>
+      <!-- <option value="Summer">Summer</option> -->
+    </select>
 
-<label class="block mb-2 font-medium text-gray-700">Course</label>
-<select name="course" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-  <option value="">Select Course</option>
-  <option value="BSIT">BSIT – Bachelor of Science in Information Technology</option>
-  <option value="BSEEE">BSEEE – Bachelor of Science in Electronic Engineering</option>
-  <option value="BSCOE">BSCOE – Bachelor of Science in Computer Engineering</option>
-  <option value="BSTM">BSTM – Bachelor of Science in Tourism Management</option>
-  <option value="BSCS">BSCS – Bachelor of Science in Computer Science</option>
-  <option value="BSHM">BSHM – Bachelor of Science in Hospitality Management</option>
-  <option value="BEED">BEED – Bachelor of Elementary Education</option>
-  <option value="BSED - English">BSED - English – Bachelor of Secondary Education</option>
-  <option value="BSBA - Financial Management">BSBA - Financial Management – Bachelor of Science in Business Administration</option>
-  <option value="BSED - Mathematics">BSED - Mathematics – Bachelor of Secondary Education</option>
-  <option value="BSED - Social Studies">BSED - Social Studies – Bachelor of Secondary Education</option>
-  <option value="BSBA - Marketing Management">BSBA - Marketing Management – Bachelor of Science in Business Administration</option>
-  <option value="BSCRM">BSCRM – Bachelor of Science in Criminology</option>
-</select>
+    <label class="block mb-2 font-medium text-gray-700">Course</label>
+    <select name="course" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+      <option value="">Select Course</option>
+      <option value="BSIT">BSIT – Bachelor of Science in Information Technology</option>
+      <option value="BSEEE">BSEEE – Bachelor of Science in Electronic Engineering</option>
+      <option value="BSCOE">BSCOE – Bachelor of Science in Computer Engineering</option>
+      <option value="BSTM">BSTM – Bachelor of Science in Tourism Management</option>
+      <option value="BSCS">BSCS – Bachelor of Science in Computer Science</option>
+      <option value="BSHM">BSHM – Bachelor of Science in Hospitality Management</option>
+      <option value="BEED">BEED – Bachelor of Elementary Education</option>
+      <option value="BSED - English">BSED - English – Bachelor of Secondary Education</option>
+      <option value="BSBA - Financial Management">BSBA - Financial Management – Bachelor of Science in Business Administration</option>
+      <option value="BSED - Mathematics">BSED - Mathematics – Bachelor of Secondary Education</option>
+      <option value="BSED - Social Studies">BSED - Social Studies – Bachelor of Secondary Education</option>
+      <option value="BSBA - Marketing Management">BSBA - Marketing Management – Bachelor of Science in Business Administration</option>
+      <option value="BSCRM">BSCRM – Bachelor of Science in Criminology</option>
+    </select>
 
-        <input type="text" name="contact" placeholder="Contact Number" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
-        <input type="file" name="image" accept="image/*" class="w-full px-4 py-2 border rounded-lg focus:ring">
-        
-        <div id="subjects-container">
-            <label class="block font-medium text-gray-700">Select Subjects (Multiple Selection)</label>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <?php
-                $subjectStmt = $conn->query("SELECT * FROM subjects");
-                while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
-                    echo '<div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
-                        <input type="checkbox" 
-                               name="subjects[]" 
-                               value="' . htmlspecialchars($subject['subject_name']) . '" 
-                               id="subject_' . $subject['id'] . '"
-                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="subject_' . $subject['id'] . '" class="text-sm text-gray-700">
-                            ' . htmlspecialchars($subject['subject_name']) . '
-                        </label>
-                    </div>';
-                }
-                ?>
+            <input type="text" name="contact" placeholder="Contact Number" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="password" name="confirm_password" placeholder="Confirm Password" required class="w-full px-4 py-2 border rounded-lg focus:ring">
+            <input type="file" name="image" accept="image/*" class="w-full px-4 py-2 border rounded-lg focus:ring">
+            
+            <div id="subjects-container">
+                <label class="block font-medium text-gray-700">Select Subjects (Multiple Selection)</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <?php
+                    $subjectStmt = $conn->query("SELECT * FROM subjects");
+                    while ($subject = $subjectStmt->fetch(PDO::FETCH_ASSOC)) {
+                        echo '<div class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
+                            <input type="checkbox" 
+                                   name="subjects[]" 
+                                   value="' . htmlspecialchars($subject['subject_name']) . '" 
+                                   id="subject_' . $subject['id'] . '"
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="subject_' . $subject['id'] . '" class="text-sm text-gray-700">
+                                ' . htmlspecialchars($subject['subject_name']) . '
+                            </label>
+                        </div>';
+                    }
+                    ?>
+                </div>
             </div>
-        </div>
 
-        <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Register Student</button>
-    </form>
-</div>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Register Student</button>
+        </form>
+    </div>
 
     <!-- Registered Students Table -->
     <div class="bg-white shadow-lg rounded-lg p-6 mt-8">
